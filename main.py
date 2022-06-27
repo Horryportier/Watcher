@@ -1,18 +1,36 @@
-import requests
-from bs4 import BeautifulSoup 
+from rich import print
+from rich.prompt import Prompt
 
-url = 'https://eune.op.gg/summoners/eune/I am Sobek'
+from op_gg_scraper import Summoner 
 
-headers = {
- 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:101.0) Gecko/20100101 Firefox/101.0'
+RANK_COLORS: dict = {
+
+    "Iron": "#453234",
+    "Bronze": "#AE6A66",
+    "Silver": "#607393",
+    "Gold": "#DDAB57",
+    "Platinum": "#0FDC95",
+    "Diamond": "#74E2FE",
+    "Maseter": "#EC02C2",
+    "Grandmaster": "#F21F0C",
+    "Challenger": "#0057E9"
 }
 
-response = requests.get(url, headers=headers)
-soup = BeautifulSoup(response.content, 'html.parser')
+def print_results(summoner: Summoner) -> None:
+    
+    print(f"[bold italic {RANK_COLORS[summoner.rank]}]{summoner.rank}")
 
-with open('page.html', 'w') as page:
-    page.write(str(soup))
+def main():
+    
+    region = Prompt.ask("chose your region: ", default="kr")
+    name  = Prompt.ask("Type summoner name: ", default="hide on bush")
 
-page.close()
+    summoner = Summoner()
+    summoner.get_summoner(region=region, sum_name=name)
 
-print(soup.prettify()) 
+    print_results(summoner)
+
+
+if __name__ == "__main__":
+    main()
+

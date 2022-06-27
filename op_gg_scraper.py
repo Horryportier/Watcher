@@ -27,19 +27,44 @@ class Summoner:
         
         self.name: str = ""
         self.rank: str = ""
-        self.lp: int = 0
+        self.sub_rank: str = ""
+        self.lp: str = ""
         self.win_rate: float = 0.0
-        self.most_played_champions: dict = {}
+        self.most_played_champions: list = []
     
-    def get_data(self, soup: BeautifulSoup) -> list:
+    def get_data(self, soup: BeautifulSoup) -> str:
        self.soup = soup
        data = soup.find("meta", property="og:description")
        return data["content"] if data else None
        
-       
+    def set_data(self , data: str):
+        self.data = data
+        champ_data: list = []
+        split_data: list = data.split("/")
+        if len(split_data) == 4:
+            champ_data = split_data[3].split(",")
 
-summoner = Summoner()
+        rank_data = [w for w in  split_data[1].split(" ") if w != '']
 
-url = get_url("eune", "HorryPortier6")
-page = get_page(url, headers)
-print(summoner.get_data(page))
+        self.name =  split_data[0]
+        self.rank = rank_data[0]
+
+        if len(rank_data) == 3:
+            self.sub_rank = rank_data[1]
+
+        self.lp = rank_data[-1]
+        self.win_rate = split_data[2]
+        self.most_played_champions = champ_data       
+
+    def get_summoner(self, region: str, sum_name: str):
+        self.region = region
+        self.sum_name = sum_name
+
+        url = get_url(self.region, self.sum_name)
+        page = get_page(url, headers)
+
+        data = self.get_data(page)
+        self.set_data(data)
+        
+        
+
