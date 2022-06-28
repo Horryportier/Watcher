@@ -1,0 +1,17 @@
+{
+      "Summoner": {
+            "name": "HorryPortier6 ",
+            "rank": "Bronze",
+            "sub_rank": "3",
+            "lp": "64LP",
+            "win_rate": " 153Win 171Lose Win Rate 47% ",
+            "most_played_champions": [
+                  " Xayah - 53Win 44Lose Win Rate 55%",
+                  " Zeri - 24Win 38Lose Win Rate 39%",
+                  " Caitlyn - 25Win 27Lose Win Rate 48%",
+                  " Ezreal - 14Win 24Lose Win Rate 37%",
+                  " Kai'Sa - 11Win 17Lose Win Rate 39%"
+            ],
+            "raw_data": "HorryPortier6 / Bronze 3 64LP / 153Win 171Lose Win Rate 47% / Xayah - 53Win 44Lose Win Rate 55%, Zeri - 24Win 38Lose Win Rate 39%, Caitlyn - 25Win 27Lose Win Rate 48%, Ezreal - 14Win 24Lose Win Rate 37%, Kai'Sa - 11Win 17Lose Win Rate 39%"
+      }
+}
