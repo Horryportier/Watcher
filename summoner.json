@@ -1,17 +1,17 @@
 {
       "Summoner": {
-            "name": "HorryPortier6 ",
-            "rank": "Bronze",
-            "sub_rank": "3",
-            "lp": "64LP",
-            "win_rate": " 153Win 171Lose Win Rate 47% ",
+            "name": "Hide on bush ",
+            "rank": "Challenger",
+            "sub_rank": "1",
+            "lp": "1002LP",
+            "win_rate": " 377Win 328Lose Win Rate 53% ",
             "most_played_champions": [
-                  " Xayah - 53Win 44Lose Win Rate 55%",
-                  " Zeri - 24Win 38Lose Win Rate 39%",
-                  " Caitlyn - 25Win 27Lose Win Rate 48%",
-                  " Ezreal - 14Win 24Lose Win Rate 37%",
-                  " Kai'Sa - 11Win 17Lose Win Rate 39%"
+                  " Ahri - 38Win 26Lose Win Rate 59%",
+                  " Vex - 28Win 24Lose Win Rate 54%",
+                  " Zoe - 24Win 25Lose Win Rate 49%",
+                  " Ryze - 24Win 25Lose Win Rate 49%",
+                  " Lee Sin - 26Win 22Lose Win Rate 54%"
             ],
-            "raw_data": "HorryPortier6 / Bronze 3 64LP / 153Win 171Lose Win Rate 47% / Xayah - 53Win 44Lose Win Rate 55%, Zeri - 24Win 38Lose Win Rate 39%, Caitlyn - 25Win 27Lose Win Rate 48%, Ezreal - 14Win 24Lose Win Rate 37%, Kai'Sa - 11Win 17Lose Win Rate 39%"
+            "raw_data": "Hide on bush / Challenger 1002LP / 377Win 328Lose Win Rate 53% / Ahri - 38Win 26Lose Win Rate 59%, Vex - 28Win 24Lose Win Rate 54%, Zoe - 24Win 25Lose Win Rate 49%, Ryze - 24Win 25Lose Win Rate 49%, Lee Sin - 26Win 22Lose Win Rate 54%"
       }
 }

@@ -2,6 +2,7 @@ import requests
 import json
 
 from bs4 import BeautifulSoup
+from rich import print
 
 from headers import headers
 
@@ -37,13 +38,20 @@ class Summoner:
        return data["content"] if data else None
        
     def set_data(self , data: str):
+        if data == "Real-time LoL Stats! Check your Summoner, Live Spectate and using powerful global League of Legends Statistics!":
+            print("[bold blink red] Account dose not exist")
+            exit()
+
         self.data = data
         
         champ_data: list = []
 
         split_data: list = data.split("/")
-        if len(split_data) == 4:
-            champ_data = split_data[3].split(",")
+        if len(split_data) < 4:
+            print(f"[bold blink red] Summoner {split_data[0]} is unrranked")
+            exit()
+            
+        champ_data = split_data[3].split(",")
 
         rank_data = [w for w in  split_data[1].split(" ") if w != '']
 
