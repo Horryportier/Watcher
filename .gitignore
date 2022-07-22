@@ -2,3 +2,4 @@ bugs.md
 *.code-workspace
 test/
 summoner.json
+build/

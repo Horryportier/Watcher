@@ -37,12 +37,13 @@ class PrintSummoner:
         print(f"[bold #EC02C2]{self.summoner.raw_data}")
     
     def print_info(self) -> None:
-        form_data = f'''
+         form_data = f'''
 [bold black ] Name: {self.data['name']} [/bold black ]
 [bold italic {RANK_COLORS[self.data['rank']]} ] Rank: {self.data['rank']}  {self.data['sub_rank']} [/bold italic {RANK_COLORS[self.data['rank']]} ]
 [bold italic #8f0fd4 ] LP: {self.data['lp']}       [/bold italic #8f0fd4 ]
 [dim italic #0fe00b ] Win Rate: {self.data['win_rate']} [/dim italic #0fe00b ]
 [italic #4d4348 ] Most played champions {self.data['most_played_champions']} [/italic #4d4348 ]
         '''
-
-        print(form_data)
+         print(form_data)
+        
+        

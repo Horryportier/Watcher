@@ -1,3 +1,4 @@
+from sys import exit
 import requests
 import json
 
@@ -28,7 +29,7 @@ class Summoner:
         self.rank: str = "Unranked"
         self.sub_rank: str = "1"
         self.lp: str = "0"
-        self.win_rate: float = 0.0
+        self.win_rate: int = ""
         self.most_played_champions: list = [None]
         self.raw_data = "None"
     

@@ -1,9 +1,20 @@
+from sys import argv, exit
+
 from display import PrintSummoner, get_input, load_data
 from op_gg_scraper import Summoner 
 
+
 def main():
-    '''gets input from user (defult values: region-kr, player name-hide on bush)'''
-    region , name = get_input() 
+    args = argv 
+    args_len = len(args) - 1
+    if args_len == 2:
+        region = argv[1]
+        name = argv[2]
+    elif len(argv) > 2:
+        print(f'watcher takes 2 argumients not {args_len}')
+        exit()
+    else: 
+        region , name = get_input() 
 
     '''gets player data''' 
     summoner = Summoner()
@@ -16,8 +27,6 @@ def main():
 
     print_s = PrintSummoner(data)
     print_s.print_info()
-
-
+    
 if __name__ == "__main__":
     main()
-
