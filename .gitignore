@@ -3,3 +3,4 @@ bugs.md
 test/
 summoner.json
 build/
+*.spec
