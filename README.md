@@ -9,6 +9,6 @@
 ---
 
 You can run pyhton file ``` pyhton3 main.py ```, or run **exe** thats in dist folder.
-After that you will be welcomed with two inputs fiels where you put your region of chosing and Player nick-name.
+After that you can give 2 argumments **region, name** or run command alone and be welcomed with two inputs fiels where you put region and name.
 
-![Screenshot from 2022-07-01 14-02-51](https://user-images.githubusercontent.com/42907709/176890777-026168ba-f524-4bba-b6d4-c2058d9c363f.png)
+![Screenshot from 2022-07-25 11-01-02](https://user-images.githubusercontent.com/42907709/180739579-664edb0e-955b-448d-912e-67b2514157ab.png)
