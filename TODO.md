@@ -1,5 +1,0 @@
-# *Bugs*
-
-
-## *TODO*
--- bubbletea tui 

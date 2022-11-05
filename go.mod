@@ -1,8 +1,3 @@
-module github.com/x/y
+module watcher/src
 
-go 1.14
-
-require (
-	github.com/charmbracelet/bubbles v0.13.0
-	github.com/charmbracelet/bubbletea v0.22.1
-)
+go 1.18
