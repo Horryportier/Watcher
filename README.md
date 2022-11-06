@@ -13,3 +13,6 @@ __
 - [ ] stats over time
 __
 
+### Tools: 
+- [bubbletea](https://github.com/charmbracelet/bubbletea)
+- [lipgloss](https://github.com/charmbracelet/lipgloss)
