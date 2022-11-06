@@ -37,23 +37,23 @@ type tier struct {
 
 func getHash() string {
 	resp, err := http.Get("https://www.op.gg/")
-        if err != nil {
-                log.Fatal(err)
-        }
-        body, err := ioutil.ReadAll(resp.Body)
-        if err != nil {
-                log.Fatal(err)
-        }
-        d := string(body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	d := string(body)
 
-        str := strings.Split(d, "/")
+	str := strings.Split(d, "/")
 
-        var val string
-        for i := 0; i < len(str); i++{
-                if str[i] == "_buildManifest.js\" defer=\"\"><" {
-                        val = str[i-1]
-                }
-        }
+	var val string
+	for i := 0; i < len(str); i++ {
+		if str[i] == "_buildManifest.js\" defer=\"\"><" {
+			val = str[i-1]
+		}
+	}
 
 	return val
 }
@@ -61,10 +61,9 @@ func getHash() string {
 func MakeUrl(name string, region string) string {
 	Hash := getHash()
 
-        
 	url := "https://www.op.gg/_next/data/" + Hash + "/summoners/" + region + "/" + strings.ReplaceAll(name, " ", "+") + ".json?region=" + region + "&summoner=" + strings.ReplaceAll(name, " ", "+")
 
-        print(url)
+	print(url)
 	return url
 }
 
@@ -96,9 +95,8 @@ func AssingData(p Player, data AllData) Player {
 	return p
 }
 
-func (p Player) Parse() (Player, error) {
+func Parse(p Player, url string) (Player, error) {
 	var data AllData
-	url := MakeUrl("hide on bush", "kr")
 	resp, err := http.Get(url)
 	if err != nil {
 		return p, err
@@ -117,4 +115,10 @@ func (p Player) Parse() (Player, error) {
 	p = AssingData(p, data)
 
 	return p, nil
+}
+
+func (p Player) GetPlayer(name string, region string) (Player, error) {
+	url := MakeUrl(name, region)
+	p, err := Parse(p, url)
+	return p, err
 }
