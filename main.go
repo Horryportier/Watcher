@@ -6,9 +6,9 @@ import (
 )
 
 func main() {
-        err := app.Start()
+	err := app.Start()
 
-        if err != nil {
-                log.Fatal(err)
-        }
+	if err != nil {
+		log.Fatal(err)
+	}
 }
