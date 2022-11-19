@@ -55,12 +55,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.state == Search {
 		return SearchUpdate(m, msg)
 	}
+        if m.state == Dashbord {
+                return DashbordUpdate(m, msg)
+        }
 	return m, nil
 }
 
 func (m model) View() string {
         if m.state == Search{
                 return SearchView(m)
+        }
+        if m.state == Dashbord{
+                return DashbordView(m)
         }
 	return  ""
 }

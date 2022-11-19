@@ -60,6 +60,7 @@ func SearchUpdate(m model, msg tea.Msg) (model, tea.Cmd) {
                 dockStyle.Width(msg.Width)
                 dockStyle.Height(msg.Height)
                 m.SearchModel.list.SetWidth(msg.Width)
+                m.SearchModel.list.SetHeight(10)
                 return m, nil
         case tea.KeyMsg:
                 switch keypress := msg.String(); keypress {
@@ -82,7 +83,7 @@ func SearchUpdate(m model, msg tea.Msg) (model, tea.Cmd) {
                                 region = choice
                                 name = m.SearchModel.textinput.Value()
                                 m.state = Dashbord
-                                return m, tea.Quit
+                                return m, nil
                         }
                 }
         }
