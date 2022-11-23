@@ -3,10 +3,22 @@ __
 
 **Fell free to fork and help if you are interested**
 
+## How to use
+
+open app -> type name of lauge of legends accound -> choose region -> press `Enter` -> see how much you suck at this game 😊.
+
+
+![](./watcher.gif)
+
+
+## Installation 
+For now manually. install script incoming.
+
+
 ## TO implemet:
 - [x] chooise of region
 - [ ] flags (to search from terminal)
-- [ ] dashboard view (all important stats)
+- [x] dashboard view (all important stats)
 - [ ] list of recently played games
 ### maybe:
 - [ ] saving of searched accounds
