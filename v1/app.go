@@ -12,13 +12,17 @@ type State int
 const (
 	Search State = iota
 	Dashbord
+        season = 12
 )
 
 var (
 	regions = []string{"ru", "tr", "br", "oce", "las", "eune", "euw", "na", "kr", "lan"}
 	name    string
 	region  string
-	player  Player
+        player Player
+
+        numOfGameModes int
+        gameMode int = 0
 )
 
 type model struct {

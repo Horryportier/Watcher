@@ -4,7 +4,7 @@ __
 **Fell free to fork and help if you are interested**
 
 ## TO implemet:
-- [ ] chooise of region
+- [x] chooise of region
 - [ ] flags (to search from terminal)
 - [ ] dashboard view (all important stats)
 - [ ] list of recently played games

@@ -63,7 +63,6 @@ func MakeUrl(name string, region string) string {
 
 	url := "https://www.op.gg/_next/data/" + Hash + "/summoners/" + region + "/" + strings.ReplaceAll(name, " ", "+") + ".json?region=" + region + "&summoner=" + strings.ReplaceAll(name, " ", "+")
 
-	print(url)
 	return url
 }
 
