@@ -12,6 +12,7 @@ type State int
 const (
 	Search State = iota
 	Dashbord
+        Debug
         season = 12
 )
 
@@ -30,6 +31,9 @@ type model struct {
 	SearchModel SearchModel
 	Dashboard   string
 }
+
+
+
 
 func initialModel() model {
 	// textinput
@@ -62,6 +66,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
         if m.state == Dashbord {
                 return DashbordUpdate(m, msg)
         }
+        if m.state == Debug {
+                return DebugUpdate(m, msg)
+        }
 	return m, nil
 }
 
@@ -71,6 +78,9 @@ func (m model) View() string {
         }
         if m.state == Dashbord{
                 return DashbordView(m)
+        }
+        if m.state == Debug{
+                return DebugView(m)
         }
 	return  ""
 }

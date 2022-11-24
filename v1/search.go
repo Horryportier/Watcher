@@ -13,8 +13,10 @@ import (
 )
 
 var (
-	choice      string
-	listFocused bool
+	choice             string
+	listFocused        bool
+	defName, defRegion = getDefultSearch()
+        debug bool
 )
 
 type SearchModel struct {
@@ -50,7 +52,6 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listitem list
 
 func SearchUpdate(m model, msg tea.Msg) (model, tea.Cmd) {
 	var cmd tea.Cmd
-	var err error
 	m.SearchModel.list.SetShowHelp(false)
 	m.SearchModel.list.SetShowTitle(false)
 	m.SearchModel.list.SetFilteringEnabled(false)
@@ -83,32 +84,7 @@ func SearchUpdate(m model, msg tea.Msg) (model, tea.Cmd) {
 				m.SearchModel.textinput.Focus()
 				return m, nil
 			}
-			if tFocus && choice == "" && m.SearchModel.textinput.Value() == "" {
-
-				player, err = player.GetPlayer("Hide on bush", "kr")
-
-				if err != nil {
-					fmt.Printf("could not get player")
-					return m, tea.Quit
-				}
-
-				m.state = Dashbord
-				return m, nil
-			}
-                        if tFocus && choice != "" && m.SearchModel.textinput.Value() != "" {
-				region = choice
-				name = m.SearchModel.textinput.Value()
-
-				player, err = player.GetPlayer(name, region)
-
-				if err != nil {
-					fmt.Printf("could not get player")
-					return m, tea.Quit
-				}
-
-				m.state = Dashbord
-				return m, nil
-			}
+                        return searchPlayer(m, debug)
 		case "1", "2", "3", "4", "5", "6", "7", "8", "9", "0":
 			if !tFocus {
 				i, _ := strconv.Atoi(keypress)
@@ -120,9 +96,10 @@ func SearchUpdate(m model, msg tea.Msg) (model, tea.Cmd) {
 				return m, nil
 			}
 
+                case "ctrl+d":
+                        debug = !debug
 		}
 	}
-
 
 	tFocus = m.SearchModel.textinput.Focused()
 
@@ -143,11 +120,18 @@ func SearchView(m model) string {
 
 	str.WriteString(m.SearchModel.textinput.View())
 	str.WriteString(" [ " + accentText.Render(choice) + " ]")
+	if m.SearchModel.textinput.Value() == defName && choice == defRegion {
+		str.WriteString(" ✔️ ")
+	}
 	str.WriteRune('\n')
 	str.WriteRune('\n')
 	str.WriteRune('\n')
 	str.WriteRune('\n')
 	str.WriteString(m.SearchModel.list.View())
+	str.WriteRune('\n')
+	str.WriteRune('\n')
+	box3 := box.Copy().Foreground(primaryColor).Align(lipgloss.Bottom)
+        str.WriteString(box3.Render(unfocusedText.Render("Def Search: ")+defName+ " | " + defRegion))
 
 	dockStyle.Align(lipgloss.Center)
 	return dockStyle.Render(str.String())
