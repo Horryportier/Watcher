@@ -16,7 +16,7 @@ var (
 	choice             string
 	listFocused        bool
 	defName, defRegion = getDefultSearch()
-        debug bool
+	debug              bool
 )
 
 type SearchModel struct {
@@ -84,7 +84,7 @@ func SearchUpdate(m model, msg tea.Msg) (model, tea.Cmd) {
 				m.SearchModel.textinput.Focus()
 				return m, nil
 			}
-                        return searchPlayer(m, debug)
+			return searchPlayer(m, debug)
 		case "1", "2", "3", "4", "5", "6", "7", "8", "9", "0":
 			if !tFocus {
 				i, _ := strconv.Atoi(keypress)
@@ -96,8 +96,8 @@ func SearchUpdate(m model, msg tea.Msg) (model, tea.Cmd) {
 				return m, nil
 			}
 
-                case "ctrl+d":
-                        debug = !debug
+		case "ctrl+d":
+			debug = !debug
 		}
 	}
 
@@ -131,7 +131,7 @@ func SearchView(m model) string {
 	str.WriteRune('\n')
 	str.WriteRune('\n')
 	box3 := box.Copy().Foreground(primaryColor).Align(lipgloss.Bottom)
-        str.WriteString(box3.Render(unfocusedText.Render("Def Search: ")+defName+ " | " + defRegion))
+	str.WriteString(box3.Render(unfocusedText.Render("Def Search: ") + defName + " | " + defRegion))
 
 	dockStyle.Align(lipgloss.Center)
 	return dockStyle.Render(str.String())

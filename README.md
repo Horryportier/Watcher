@@ -12,7 +12,14 @@ open app -> type name of lauge of legends accound -> choose region -> press `Ent
 
 
 ## Installation 
-For now manually. install script incoming.
+#### linux:
+```bash 
+git clone https://github.com/Horryportier/Watcher
+cd Watcher
+chmod +x install.sh 
+./install.sh
+```
+
 
 
 ## TO implemet:

@@ -15,6 +15,7 @@ func getDefultSearch() (string, string) {
 
 func searchPlayer(m model, debug bool) (model, tea.Cmd) {
 	var err error
+	defName, defRegion = getDefultSearch()
 	if m.SearchModel.textinput.Focused() && choice != "" && m.SearchModel.textinput.Value() != "" {
 		region = choice
 		name = m.SearchModel.textinput.Value()
