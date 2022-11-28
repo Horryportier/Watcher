@@ -84,7 +84,8 @@ func SearchUpdate(m model, msg tea.Msg) (model, tea.Cmd) {
 				m.SearchModel.textinput.Focus()
 				return m, nil
 			}
-			return searchPlayer(m, debug)
+			m, cmd = searchPlayer(m, debug)
+			return m, cmd
 		case "1", "2", "3", "4", "5", "6", "7", "8", "9", "0":
 			if !tFocus {
 				i, _ := strconv.Atoi(keypress)
@@ -120,9 +121,6 @@ func SearchView(m model) string {
 
 	str.WriteString(m.SearchModel.textinput.View())
 	str.WriteString(" [ " + accentText.Render(choice) + " ]")
-	if m.SearchModel.textinput.Value() == defName && choice == defRegion {
-		str.WriteString(" ✔️ ")
-	}
 	str.WriteRune('\n')
 	str.WriteRune('\n')
 	str.WriteRune('\n')
@@ -133,6 +131,8 @@ func SearchView(m model) string {
 	box3 := box.Copy().Foreground(primaryColor).Align(lipgloss.Bottom)
 	str.WriteString(box3.Render(unfocusedText.Render("Def Search: ") + defName + " | " + defRegion))
 
+	//tl := lipgloss.JoinVertical(lipgloss.Center ,m.SearchModel.textinput.View(),
+	//                       m.SearchModel.list.View())
 	dockStyle.Align(lipgloss.Center)
 	return dockStyle.Render(str.String())
 }

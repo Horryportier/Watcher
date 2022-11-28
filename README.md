@@ -5,8 +5,13 @@ __
 
 ## How to use
 
-open app -> type name of lauge of legends accound -> choose region -> press `Enter` -> see how much you suck at this game 😊.
-
+```mermaid
+flowchart LR;
+A[open app]--> B[type name of lauge of legends accound]
+B--> C[choose region]
+C--> D[press `Enter`]
+E--> E[see how much you suck at this game 😊.]
+```
 
 ![](./watcher.gif)
 
