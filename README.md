@@ -1,8 +1,5 @@
-## Currently under progres of rewriting in go.
-__
-
-**Fell free to fork and help if you are interested**
-
+## Watcher
+an tui to check how much u suck at leauge of legends.
 ## How to use
 
 ```mermaid
@@ -10,7 +7,7 @@ flowchart LR;
 A[open app]--> B[type name of lauge of legends accound]
 B--> C[choose region]
 C--> D[press `Enter`]
-E--> E[see how much you suck at this game 😊.]
+D--> E[see how much you suck at this game ]
 ```
 
 ![](./watcher.gif)
