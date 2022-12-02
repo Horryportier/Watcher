@@ -10,7 +10,7 @@ C--> D[press `Enter`]
 D--> E[see how much you suck at this game ]
 ```
 
-![](./watcher.gif)
+
 
 
 ## Installation 
