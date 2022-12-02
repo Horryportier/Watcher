@@ -9,7 +9,7 @@ B--> C[choose region]
 C--> D[press `Enter`]
 D--> E[see how much you suck at this game ]
 ```
-<img src="https://raw.githubusercontent.com/Horryportier/Watcher/main/watcher.gif" height=400 />
+<img src="https://raw.githubusercontent.com/Horryportier/Watcher/main/watcher.gif" height=500/>
 
 
 
