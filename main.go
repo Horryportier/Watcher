@@ -2,7 +2,7 @@ package main
 
 import (
 	"log"
-	app "watcher/src/v1"
+	app "src/watcher/v1"
 )
 
 func main() {

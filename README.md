@@ -18,8 +18,9 @@ D--> E[see how much you suck at this game ]
 ```bash 
 git clone https://github.com/Horryportier/Watcher
 cd Watcher
-chmod +x install.sh 
-./install.sh
+go install -v 
+# if your go/bin is not in your path.
+export PATH=$PATH:/home/$(whoami)/go/bin
 ```
 
 

@@ -30,6 +30,7 @@ type model struct {
 	state       State
 	SearchModel SearchModel
 	Dashboard   string
+        GameModel string
 }
 
 

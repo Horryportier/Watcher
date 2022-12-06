@@ -1,4 +1,4 @@
-module watcher/src
+module src/watcher
 
 go 1.18
 
