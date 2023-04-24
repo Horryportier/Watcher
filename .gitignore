@@ -3,3 +3,8 @@ test/
 summoner.json
 build/
 *.spec
+
+
+# Added by cargo
+
+/target
