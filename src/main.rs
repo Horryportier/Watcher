@@ -1,11 +1,7 @@
 use std::env::args;
 
 use api::api::{get_rank, get_summoner};
-use crossterm::style::{style, Color, Colors, Print, PrintStyledContent, StyledContent, Stylize};
-use riven::{
-    consts::{PlatformRoute, Tier},
-    RiotApiError, models::league_v4::LeagueEntry,
-};
+use riven::consts::PlatformRoute;
 use ui::ui::ui;
 use utils::LeagueEntryDisplay;
 
@@ -20,7 +16,7 @@ async fn main() -> Result<(), ()> {
     let args: Vec<String> = args().collect();
 
     if args.len() == 1 {
-        ui();
+        let _ = ui().await;
     }
 
     for (i, arg) in args.iter().enumerate() {
@@ -28,11 +24,12 @@ async fn main() -> Result<(), ()> {
             "rank" => {
                 let id = get_summoner(ROUTE, &args[i + 1])
                     .await
-                    .expect("oeu")
-                    .expect("")
+                    .expect("couldn't get_summoner")
+                    .expect("get_summoner is none")
                     .id;
-                let res = get_rank(ROUTE, id.as_str()).await.expect("oeau");
-                let ranks: Vec<LeagueEntryDisplay> =  res.iter().map(|f| LeagueEntryDisplay{ league_entry: f.clone()}).collect();
+                let res = get_rank(ROUTE, id.as_str()).await.expect("couldn't get_rank");
+                let ranks: Vec<LeagueEntryDisplay> =
+                    res.iter().map(|f| LeagueEntryDisplay(f.clone())).collect();
                 for r in ranks {
                     print!("{}", r)
                 }
