@@ -58,6 +58,9 @@ impl fmt::Display for LeagueEntryDisplay {
 }
 
 impl LeagueEntryDisplay {
+    pub fn with(entry: LeagueEntry) -> LeagueEntryDisplay {
+        LeagueEntryDisplay(entry)
+    }
     pub fn spans(&self) -> Vec<Spans> {
         let entry = &self.0;
         vec![

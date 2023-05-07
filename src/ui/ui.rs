@@ -16,21 +16,8 @@ use tui::{
     Frame, Terminal,
 };
 
-use crate::{
-    api::api::{get_rank, get_summoner},
-    utils::LeagueEntryDisplay,
-};
 
-#[derive(Debug)]
-enum Status {
-    Searching,
-    Idle,
-}
-
-struct App {
-    rank: Option<Vec<LeagueEntryDisplay>>,
-    status: Status,
-}
+use super::app::{App, Msg};
 
 pub async fn ui() -> Result<(), io::Error> {
     enable_raw_mode()?;
@@ -41,43 +28,46 @@ pub async fn ui() -> Result<(), io::Error> {
 
     let tick_rate = Duration::from_millis(250);
     let last_tick = Instant::now();
-
-    let mut app = App {
-        rank: None,
-        status: Status::Idle,
-    };
+    let mut app = App::default();
 
     loop {
-        terminal.draw(|f| draw(f, &mut app))?;
+        let mut msg: Option<Msg> = None;
+        terminal.draw(|f| msg = draw(f, &mut app))?;
 
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
             .unwrap_or_else(|| Duration::from_secs(0));
 
         match handle_keys(timeout, &mut app).await {
-            Ok(x) => match x.as_str() {
-                "Quit" => {
-                    thread::sleep(Duration::from_millis(500));
+            Ok(x) => match x {
+                Some(m) => match m {
+                    Msg::Quit => {
+                        thread::sleep(Duration::from_millis(500));
 
-                    disable_raw_mode()?;
+                        disable_raw_mode()?;
 
-                    execute!(
-                        terminal.backend_mut(),
-                        LeaveAlternateScreen,
-                        DisableMouseCapture
-                    )?;
-                    terminal.show_cursor()?;
-                    return Ok(());
-                }
+                        execute!(
+                            terminal.backend_mut(),
+                            LeaveAlternateScreen,
+                            DisableMouseCapture
+                        )?;
+                        terminal.show_cursor()?;
+                        return Ok(());
+                    }
+                    _ => { msg = Some(m)}
+                },
                 _ => {}
             },
             Err(_) => {}
         }
+        app.msg = msg;
+        app.msg().await;
+
         if last_tick.elapsed() >= tick_rate {}
     }
 }
 
-fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) -> Option<Msg> {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
@@ -94,11 +84,12 @@ fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     draw_header(f, app, chunks[0]);
     draw_conntent(f, app, chunks[1]);
     draw_footer(f, app, chunks[2]);
+    None
 }
 
 fn draw_header<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     let paragraph =
-        Paragraph::new(format!("{:?}", app.status)).block(Block::default().borders(Borders::ALL));
+        Paragraph::new(format!("{:?}", app.msg)).block(Block::default().borders(Borders::ALL));
     f.render_widget(paragraph, area);
 }
 
@@ -115,10 +106,11 @@ fn draw_conntent<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 
     draw_rank(f, app, chunk[0]);
     draw_masteries(f, app, chunk[1]);
-    draw_games(f, app, chunks[1]);
+    draw_games(f, app, chunks[1])
 }
+
 fn draw_rank<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let text = match &app.rank {
+    let text = match &app.data.rank {
         Some(e) => {
             let a = e.iter().map(|f| f.spans()).collect::<Vec<_>>().concat();
             a
@@ -129,6 +121,7 @@ fn draw_rank<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     let paragraph = Paragraph::new(text).block(Block::default().borders(Borders::ALL));
     f.render_widget(paragraph, area);
 }
+
 fn draw_masteries<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     let paragraph = Paragraph::new("masteries").block(Block::default().borders(Borders::ALL));
     f.render_widget(paragraph, area);
@@ -143,34 +136,19 @@ fn draw_footer<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     f.render_widget(paragraph, area);
 }
 
-async fn handle_keys(timeout: Duration, app: &mut App) -> io::Result<String> {
+async fn handle_keys(timeout: Duration, app: &mut App) -> io::Result<Option<Msg>> {
     if crossterm::event::poll(timeout)? {
         if let Event::Key(key) = event::read()? {
             match key.code {
-                KeyCode::Char('q') => return Ok("Quit".to_string()),
+                KeyCode::Char('q') => return Ok(Some(Msg::Quit)),
                 KeyCode::Char('f') => {
-                    let res = get_summoner(crate::ROUTE, "NOTJOHNYS").await;
-
-                    let id: String = match res {
-                        Ok(o) => match o {
-                            Some(s) => s.id.to_string(),
-                            None => "get_summoner returned empty".to_string(),
-                        },
-                        Err(_) => "couldn't get_summoner".to_string(),
-                    };
-
-                    let res = get_rank(crate::ROUTE, &id).await;
-                    let a = match res {
-                        Ok(r) => Some(
-                            r.iter()
-                                .map(|f| LeagueEntryDisplay(f.clone()))
-                                .collect::<Vec<LeagueEntryDisplay>>(),
-                        ),
-                        Err(_) => None,
-                    };
-                    app.rank = a;
-                    app.status = Status::Idle;
+                    return Ok(Some(Msg::Search(
+                        riven::consts::PlatformRoute::EUN1,
+                        "HorryPortier6".to_string(),
+                    )))
                 }
+
+                KeyCode::Tab => {}
                 //KeyCode::Char('j') => app.items.next(),
                 //KeyCode::Down => app.items.next(),
                 //KeyCode::Up => app.items.previous(),
@@ -187,5 +165,5 @@ async fn handle_keys(timeout: Duration, app: &mut App) -> io::Result<String> {
             }
         }
     }
-    Ok("".to_string())
+    Ok(None)
 }

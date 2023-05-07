@@ -1,6 +1,5 @@
-use riven::consts::{PlatformRoute, RegionalRoute, RegionalRouteIter};
+use riven::consts::PlatformRoute;
 use riven::models::league_v4::LeagueEntry;
-use riven::models::match_v5::Match;
 use riven::models::summoner_v4::Summoner;
 use riven::{RiotApi, RiotApiError};
 
