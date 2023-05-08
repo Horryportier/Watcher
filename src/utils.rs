@@ -1,11 +1,65 @@
 use core::fmt;
+use std::fmt::Display;
 
 use crossterm::style::{Color, Stylize};
-use riven::{consts::Tier, models::league_v4::LeagueEntry};
+use riven::{
+    consts::Tier,
+    models::{champion_mastery_v4::ChampionMastery, league_v4::LeagueEntry, summoner_v4::Summoner},
+};
 use tui::{
     style::{self, Modifier, Style},
     text::{Span, Spans},
 };
+
+pub struct SummonerDisplay(pub Summoner);
+
+impl Display for SummonerDisplay {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let entry = &self.0;
+
+        let text = format!(
+            r###"
+{}  {}:{}
+                           "###,
+            entry
+                .name
+                .clone()
+                .with(Color::Blue)
+                .attribute(crossterm::style::Attribute::Bold)
+                .attribute(crossterm::style::Attribute::Underlined),
+            "lvl".with(Color::Reset),
+            entry.summoner_level.to_string().with(Color::Cyan)
+        );
+
+        write!(f, "{}", text)
+    }
+}
+
+impl SummonerDisplay {
+    pub fn with(entry: Summoner) -> SummonerDisplay {
+        SummonerDisplay(entry)
+    }
+    pub fn spans(&self) -> Vec<Spans> {
+        let entry = &self.0;
+        vec![Spans::from(vec![
+            Span::from("  "),
+            Span::styled(
+                entry.name.clone(),
+                Style::default()
+                    .fg(style::Color::Green)
+                    .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
+            ),
+            Span::from("    "),
+            Span::styled("lvl", Style::default().fg(style::Color::Reset)),
+            Span::from(":"),
+            Span::styled(
+                entry.summoner_level.to_string(),
+                Style::default().fg(style::Color::Yellow),
+            ),
+            Span::from("\n"),
+        ])]
+    }
+}
 
 pub struct LeagueEntryDisplay(pub LeagueEntry);
 
@@ -112,5 +166,59 @@ impl LeagueEntryDisplay {
                 Span::from("\n"),
             ]),
         ]
+    }
+}
+
+pub struct ChampionMasteryDisplay(pub ChampionMastery);
+
+impl Display for ChampionMasteryDisplay {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let entry = &self.0;
+        let text = format!(
+            "{: <9}  {: >7}  ({})",
+            entry
+                .champion_id
+                .name()
+                .unwrap_or("UNKNOWN")
+                .with(Color::Green),
+            entry.champion_points.to_string().with(Color::Yellow),
+            entry
+                .champion_level
+                .to_string()
+                .with(Color::Cyan)
+                .attribute(crossterm::style::Attribute::Bold)
+        );
+        write!(f, "{}", text)
+    }
+}
+
+impl ChampionMasteryDisplay {
+    pub fn with(entry: ChampionMastery) -> ChampionMasteryDisplay {
+        ChampionMasteryDisplay(entry)
+    }
+
+    pub fn spans(&self) -> Vec<Spans> {
+        let entry = &self.0;
+        vec![Spans::from(vec![
+            Span::from("  "),
+            Span::styled(
+                entry.champion_id.name().unwrap_or("UNKNOWN"),
+                Style::default()
+                    .fg(style::Color::Green)
+                    .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
+            ),
+            Span::from("    "),
+            Span::styled(
+                entry.champion_points.to_string(),
+                Style::default().fg(style::Color::Yellow),
+            ),
+            Span::from("  ("),
+            Span::styled(
+                entry.champion_level.to_string(),
+                Style::default().fg(style::Color::Cyan),
+            ),
+            Span::from(")"),
+            Span::from("\n"),
+        ])]
     }
 }

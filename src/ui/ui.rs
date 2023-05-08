@@ -13,9 +13,8 @@ use tui::{
     layout::{Constraint, Direction, Layout, Rect},
     text::Spans,
     widgets::{Block, Borders, Paragraph},
-    Frame, Terminal,
+    Frame, Terminal, style::Style,
 };
-
 
 use super::app::{App, Msg};
 
@@ -54,7 +53,7 @@ pub async fn ui() -> Result<(), io::Error> {
                         terminal.show_cursor()?;
                         return Ok(());
                     }
-                    _ => { msg = Some(m)}
+                    _ => msg = Some(m),
                 },
                 _ => {}
             },
@@ -73,8 +72,8 @@ fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) -> Option<Msg> {
         .margin(1)
         .constraints(
             [
-                Constraint::Percentage(20),
-                Constraint::Percentage(70),
+                Constraint::Percentage(10),
+                Constraint::Percentage(80),
                 Constraint::Percentage(10),
             ]
             .as_ref(),
@@ -88,8 +87,13 @@ fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) -> Option<Msg> {
 }
 
 fn draw_header<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let paragraph =
-        Paragraph::new(format!("{:?}", app.msg)).block(Block::default().borders(Borders::ALL));
+
+    let text = match &app.data.summoner {
+        Some(e) => e.spans(),
+        None => vec![Spans::from("No data".to_string())],
+    };
+
+    let paragraph = Paragraph::new(text).block(Block::default().borders(Borders::ALL));
     f.render_widget(paragraph, area);
 }
 
@@ -101,7 +105,7 @@ fn draw_conntent<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 
     let chunk = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)].as_ref())
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
         .split(chunks[0]);
 
     draw_rank(f, app, chunk[0]);
@@ -123,7 +127,15 @@ fn draw_rank<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 }
 
 fn draw_masteries<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let paragraph = Paragraph::new("masteries").block(Block::default().borders(Borders::ALL));
+    let text = match &app.data.masteries {
+        Some(e) => {
+            let a = e.iter().map(|f| f.spans()).collect::<Vec<_>>().concat();
+            a
+        }
+        None => vec![Spans::from("No data".to_string())],
+    };
+
+    let paragraph = Paragraph::new(text).block(Block::default().borders(Borders::ALL));
     f.render_widget(paragraph, area);
 }
 fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
@@ -147,8 +159,7 @@ async fn handle_keys(timeout: Duration, app: &mut App) -> io::Result<Option<Msg>
                         "HorryPortier6".to_string(),
                     )))
                 }
-
-                KeyCode::Tab => {}
+                KeyCode::Tab => app.focus = Some(app.focus.unwrap_or(super::app::Window::Header).next()),
                 //KeyCode::Char('j') => app.items.next(),
                 //KeyCode::Down => app.items.next(),
                 //KeyCode::Up => app.items.previous(),

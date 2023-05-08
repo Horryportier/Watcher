@@ -1,4 +1,5 @@
 use riven::consts::PlatformRoute;
+use riven::models::champion_mastery_v4::ChampionMastery;
 use riven::models::league_v4::LeagueEntry;
 use riven::models::summoner_v4::Summoner;
 use riven::{RiotApi, RiotApiError};
@@ -7,8 +8,7 @@ const API_KEY: &'static str = std::env!("RGAPI_KEY");
 
 pub async fn get_rank(route: PlatformRoute, id: &str) -> Result<Vec<LeagueEntry>, RiotApiError> {
     RiotApi::new(API_KEY)
-        .league_v4()
-        .get_league_entries_for_summoner(route, id)
+        .league_v4() .get_league_entries_for_summoner(route, id)
         .await
 }
 
@@ -25,6 +25,23 @@ pub async fn get_summoner(
             None => return Ok(None),
             Some(s) => return Ok(Some(s)),
         },
+        Err(e) => return Err(e),
+    }
+}
+
+pub async fn get_masteries(
+    route: PlatformRoute,
+    id: &str,
+    top: usize,
+) -> Result<Vec<ChampionMastery>, RiotApiError> {
+    let res = RiotApi::new(API_KEY)
+        .champion_mastery_v4()
+        .get_top_champion_masteries(route, id, Some(top as i32))
+        .await;
+    match res {
+        Ok(i) =>  {
+            return  Ok(i);
+        }
         Err(e) => return Err(e),
     }
 }
