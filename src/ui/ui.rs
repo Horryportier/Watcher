@@ -11,12 +11,13 @@ use crossterm::{
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout, Rect},
+    style::{Modifier, Style},
     text::Spans,
-    widgets::{Block, Borders, Paragraph},
-    Frame, Terminal, style::Style,
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
+    Frame, Terminal,
 };
 
-use super::app::{App, Msg};
+use super::app::{App, CurrentSearch, Games, Msg};
 
 pub async fn ui() -> Result<(), io::Error> {
     enable_raw_mode()?;
@@ -87,14 +88,20 @@ fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) -> Option<Msg> {
 }
 
 fn draw_header<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
+        .split(area);
     let text = match &app.data.summoner {
         Some(e) => e.spans(),
         None => vec![Spans::from("No data".to_string())],
     };
 
     let paragraph = Paragraph::new(text).block(Block::default().borders(Borders::ALL));
-    f.render_widget(paragraph, area);
+    f.render_widget(paragraph, chunks[0]);
+
+    let paragraph = Paragraph::new("input").block(Block::default().borders(Borders::ALL));
+    f.render_widget(paragraph, chunks[1]);
 }
 
 fn draw_conntent<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
@@ -139,8 +146,35 @@ fn draw_masteries<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     f.render_widget(paragraph, area);
 }
 fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let paragraph = Paragraph::new("games").block(Block::default().borders(Borders::ALL));
-    f.render_widget(paragraph, area);
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
+        .split(area);
+
+    let mut name = app
+        .data
+        .current_search
+        .unwrap_or(CurrentSearch("UNKNOWN".to_string(), "UNKNOWN".to_string()))
+        .1;
+    let mut items: Vec<ListItem> = vec![];
+    let mut state = ListState::default();
+    match app.data.games.clone() {
+        Games::G(mut g) => {
+            g.items
+                .iter_mut()
+                .map(|f| items.push(ListItem::new(f.clone().list(&name.clone()))));
+        }
+        Games::N(n) => items.append(&mut vec![ListItem::new(n)]),
+    };
+    let list = List::new(items)
+        .block(Block::default().title("Steups"))
+        .style(Style::default().fg(tui::style::Color::Gray))
+        .highlight_style(
+            Style::default()
+                .fg(tui::style::Color::LightCyan)
+                .add_modifier(Modifier::BOLD),
+        );
+    f.render_stateful_widget(list, chunks[1], &mut state)
 }
 
 fn draw_footer<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
@@ -159,11 +193,13 @@ async fn handle_keys(timeout: Duration, app: &mut App) -> io::Result<Option<Msg>
                         "HorryPortier6".to_string(),
                     )))
                 }
-                KeyCode::Tab => app.focus = Some(app.focus.unwrap_or(super::app::Window::Header).next()),
-                //KeyCode::Char('j') => app.items.next(),
-                //KeyCode::Down => app.items.next(),
-                //KeyCode::Up => app.items.previous(),
-                //KeyCode::Char('k') => app.items.previous(),
+                KeyCode::Tab => {
+                    app.focus = Some(app.focus.unwrap_or(super::app::Window::Header).next())
+                }
+                KeyCode::Char('j') => app.down(),
+                KeyCode::Down => app.down(),
+                KeyCode::Up => app.up(),
+                KeyCode::Char('k') => app.up(),
                 //KeyCode::Esc => app.items.unselect(),
                 //KeyCode::Enter => match app.items.get_item() {
                 //    None => panic!("no item"),

@@ -3,14 +3,18 @@ use std::fmt::Display;
 
 use crossterm::style::{Color, Stylize};
 use riven::{
-    consts::Tier,
-    models::{champion_mastery_v4::ChampionMastery, league_v4::LeagueEntry, summoner_v4::Summoner},
+    consts::{Team, Tier},
+    models::{
+        champion_mastery_v4::ChampionMastery, league_v4::LeagueEntry, match_v5::Match,
+        summoner_v4::Summoner,
+    },
 };
 use tui::{
     style::{self, Modifier, Style},
     text::{Span, Spans},
 };
 
+#[derive(Clone)]
 pub struct SummonerDisplay(pub Summoner);
 
 impl Display for SummonerDisplay {
@@ -61,6 +65,7 @@ impl SummonerDisplay {
     }
 }
 
+#[derive(Clone)]
 pub struct LeagueEntryDisplay(pub LeagueEntry);
 
 impl fmt::Display for LeagueEntryDisplay {
@@ -169,6 +174,7 @@ impl LeagueEntryDisplay {
     }
 }
 
+#[derive(Clone)]
 pub struct ChampionMasteryDisplay(pub ChampionMastery);
 
 impl Display for ChampionMasteryDisplay {
@@ -220,5 +226,176 @@ impl ChampionMasteryDisplay {
             Span::from(")"),
             Span::from("\n"),
         ])]
+    }
+}
+
+#[derive(Clone)]
+pub struct MatchDisplay(pub Match);
+
+impl Display for MatchDisplay {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut entry = self.0.info.clone();
+        let team_red = entry.teams.pop().unwrap();
+        let team_blue = entry.teams.pop().unwrap();
+        let text = format!(
+            r###"
+{}
+
+blue team: {}
+bans: {}
+Players:
+    {}
+
+red team: {}
+bans: {}
+Players:
+    {}
+            "###,
+            entry
+                .queue_id
+                .to_string()
+                .with(Color::Reset)
+                .attribute(crossterm::style::Attribute::Bold),
+            team_blue
+                .win
+                .then(|| "win".with(Color::Green))
+                .unwrap_or("lose".with(Color::Red)),
+            team_blue
+                .bans
+                .iter()
+                .map(|f| format!(
+                    "{}",
+                    f.champion_id
+                        .name()
+                        .unwrap_or("UNKNOWN")
+                        .with(Color::Yellow)
+                ))
+                .collect::<Vec<_>>()
+                .join(", "),
+            entry
+                .participants
+                .iter()
+                .filter(|f| f.team_id == Team::BLUE)
+                .map(|f| format!(
+                    "{} {} {}",
+                    f.clone().role.with(Color::Cyan),
+                    f.clone().champion_name.with(Color::Magenta),
+                    f.clone().summoner_name.with(Color::Yellow)
+                ))
+                .collect::<Vec<_>>()
+                .join("\n   "),
+            team_red
+                .win
+                .then(|| "win".with(Color::Green))
+                .unwrap_or("lose".with(Color::Red)),
+            team_red
+                .bans
+                .iter()
+                .map(|f| format!(
+                    "{}",
+                    f.champion_id
+                        .name()
+                        .unwrap_or("UNKNOWN")
+                        .with(Color::Yellow)
+                ))
+                .collect::<Vec<_>>()
+                .join(", "),
+            entry
+                .participants
+                .iter()
+                .filter(|f| f.team_id == Team::RED)
+                .map(|f| format!(
+                    "{} {} {}",
+                    f.clone().role.with(Color::Cyan),
+                    f.clone().champion_name.with(Color::Magenta),
+                    f.clone().summoner_name.with(Color::Yellow)
+                ))
+                .collect::<Vec<_>>()
+                .join("\n   "),
+        );
+        write!(f, "{}", text)
+    }
+}
+
+impl MatchDisplay {
+    pub fn with(entry: Match) -> MatchDisplay {
+        MatchDisplay(entry)
+    }
+
+    pub fn list(&mut self, name: &str) -> Vec<Spans> {
+        let text = self
+            .0
+            .info
+            .participants
+            .iter()
+            .map(|f| {
+                if f.summoner_name == name && f.win {
+                    Span::styled(
+                        "won",
+                        Style::default()
+                            .fg(style::Color::Green)
+                            .add_modifier(Modifier::BOLD),
+                    )
+                } else {
+                    Span::styled(
+                        "lose",
+                        Style::default()
+                            .fg(style::Color::Green)
+                            .add_modifier(Modifier::BOLD),
+                    )
+                }
+            })
+            .collect::<Vec<Span>>();
+        vec![Spans::from(text)]
+    }
+
+    pub fn spans(&mut self) -> Vec<Spans> {
+        let name_red: Style = Style::default().fg(style::Color::Red);
+        let name_blue: Style = Style::default().fg(style::Color::Red);
+        let green: Style = Style::default().fg(style::Color::Green);
+        let yellow: Style = Style::default().fg(style::Color::Yellow);
+        let cyan: Style = Style::default().fg(style::Color::Cyan);
+        let entry = &self.0.info;
+
+        let team_red = entry
+            .participants
+            .iter()
+            .filter(|f| f.team_id == Team::RED)
+            .collect::<Vec<_>>();
+        let team_blue = entry
+            .participants
+            .iter()
+            .filter(|f| f.team_id == Team::BLUE)
+            .collect::<Vec<_>>();
+
+        let mut sapans = vec![Spans::from(vec![Span::styled(
+            format!("{}", entry.game_mode),
+            Style::default()
+                .fg(style::Color::Reset)
+                .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
+        )])];
+
+        sapans.append(
+            &mut team_red
+                .iter()
+                .enumerate()
+                .map(|f| {
+                    let (i, r) = f;
+                    let b = team_blue[i];
+
+                    Spans::from(vec![
+                        Span::from("    "),
+                        Span::styled(format!("{}  ", r.team_position), cyan),
+                        Span::styled(format!("{}  ", r.summoner_name), name_red),
+                        Span::styled(format!("{}    |", r.champion_name), yellow),
+                        Span::styled(format!("{}  ", b.team_position), cyan),
+                        Span::styled(format!("{}  ", b.team_position), name_blue),
+                        Span::styled(format!("{}  ", b.team_position), yellow),
+                    ])
+                })
+                .collect::<Vec<Spans>>(),
+        );
+
+        sapans
     }
 }

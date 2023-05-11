@@ -1,9 +1,9 @@
 use std::env::args;
 
-use api::api::{get_masteries, get_rank, get_summoner};
+use api::api::{get_games, get_masteries, get_rank, get_summoner};
 use riven::consts::PlatformRoute;
 use ui::ui::ui;
-use utils::{ChampionMasteryDisplay, LeagueEntryDisplay, SummonerDisplay};
+use utils::{ChampionMasteryDisplay, LeagueEntryDisplay, SummonerDisplay, MatchDisplay};
 
 mod api;
 mod ui;
@@ -27,7 +27,7 @@ async fn main() -> Result<(), ()> {
                     .expect("couldn't get_summoner")
                     .expect("get_summoner is none");
                 println!("{}", SummonerDisplay::with(sum));
-            },
+            }
             "rank" => {
                 let id = get_summoner(ROUTE, &args[i + 1])
                     .await
@@ -60,6 +60,16 @@ async fn main() -> Result<(), ()> {
                 for m in masteries {
                     println!("{}", m)
                 }
+            }
+            "game" => {
+                let id = get_summoner(ROUTE, &args[i + 1])
+                    .await
+                    .expect("couldn't get_summoner")
+                    .expect("get_summoner is none")
+                    .puuid;
+                let matches = get_games(ROUTE, &id).await.expect("couldn't get_games");
+                let m = MatchDisplay::with(matches.get(args[i + 2].parse().unwrap_or(0)).unwrap().clone());
+                println!("{}", m)
             }
             _ => (),
         }
