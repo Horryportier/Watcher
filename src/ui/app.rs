@@ -1,5 +1,5 @@
 use riven::consts::PlatformRoute;
-use tui::widgets::{ListItem, ListState};
+use tui::widgets::ListState;
 
 use crate::{
     api::api::{get_games, get_masteries, get_rank, get_summoner},
@@ -45,42 +45,41 @@ impl Window {
 }
 
 #[derive(Clone)]
-pub struct App<'a> {
+pub struct App {
     pub msg: Option<Msg>,
     pub focus: Option<Window>,
-    pub data: Data<'a>,
+    pub data: Data,
 }
 
 #[derive(Clone)]
-pub struct Data<'a> {
+pub struct Data {
     pub rank: Option<Vec<LeagueEntryDisplay>>,
-    pub current_search: Option<CurrentSearch<'a>>, // (id,name)
+    pub current_search: Option<(String, String)>, // (id,name)
     pub masteries: Option<Vec<ChampionMasteryDisplay>>,
     pub summoner: Option<SummonerDisplay>,
     pub games: Games,
 }
 
 #[derive(Clone)]
-pub struct CurrentSearch<'a>(pub &'a str, pub &'a str);
-    
+pub struct CurrentSearch(pub String, pub String);
 
 #[derive(Clone)]
 pub enum Games {
     N(String),
-    G(GamesList<MatchDisplay>),
+    G(GamesList),
 }
 
-impl<'a> App<'a> {
-    pub fn default() -> App<'a> {
+impl App {
+    pub fn default() -> App {
         App {
             msg: None,
-            focus: None,
+            focus: Some(Window::List),
             data: Data {
                 rank: None,
                 current_search: None,
                 masteries: None,
                 summoner: None,
-                games: Games::N("NO datak".to_string()),
+                games: Games::N("NO data".to_string()),
             },
         }
     }
@@ -104,14 +103,11 @@ impl<'a> App<'a> {
                         Some(sumoner) => {
                             puuid = &sumoner.puuid;
                             self.data.summoner = Some(SummonerDisplay::with(sumoner.clone()));
-                            self.data.current_search =
-                                Some(CurrentSearch(&sumoner.id, &sumoner.name));
+                            self.data.current_search = Some((sumoner.id, sumoner.name));
 
-                            let res = get_rank(
-                                *route,
-                                self.data.current_search.as_ref().unwrap().0
-                            )
-                            .await;
+                            let res =
+                                get_rank(*route, &self.data.current_search.as_ref().unwrap().0)
+                                    .await;
                             let entry: Option<Vec<LeagueEntryDisplay>> = match res {
                                 Err(_) => None,
                                 Ok(rank) => Some(
@@ -124,7 +120,7 @@ impl<'a> App<'a> {
 
                             let res = get_masteries(
                                 *route,
-                                self.data.current_search.as_ref().unwrap().0,
+                                &self.data.current_search.as_ref().unwrap().0,
                                 10,
                             )
                             .await;
@@ -145,9 +141,17 @@ impl<'a> App<'a> {
                                     rank.iter().map(|f| MatchDisplay::with(f.clone())).collect(),
                                 ),
                             };
-                            self.data.games = Games::G(GamesList::with(entry.unwrap()));
+                            match entry {
+                                Some(e) => self.data.games = Games::G(GamesList::with(e)),
+                                None => {
+                                    self.data.games =
+                                        Games::N("couldn't get games data".to_string())
+                                }
+                            }
 
-                            self.msg = None
+                            self.msg = None;
+
+                            self.focus = Some(Window::List)
                         }
                     }
                 }
@@ -159,7 +163,7 @@ impl<'a> App<'a> {
     pub fn up(&mut self) {
         match self.focus.unwrap_or(Window::Header) {
             Window::List => match self.data.games {
-                Games::G(mut g) => g.previous(),
+                Games::G(ref mut g) => g.previous(),
                 Games::N(_) => {}
             },
             _ => {}
@@ -168,7 +172,7 @@ impl<'a> App<'a> {
     pub fn down(&mut self) {
         match self.focus.unwrap_or(Window::Header) {
             Window::List => match self.data.games {
-                Games::G(mut g) => g.next(),
+                Games::G(ref mut g) => g.next(),
                 Games::N(_) => {}
             },
             _ => {}
@@ -177,20 +181,20 @@ impl<'a> App<'a> {
 }
 
 #[derive(Clone)]
-pub struct GamesList<T> {
+pub struct GamesList {
     pub state: ListState,
-    pub items: Vec<T>,
+    pub items: Vec<MatchDisplay>,
 }
 
-impl<T> GamesList<T> {
-    pub fn with(items: Vec<T>) -> GamesList<T> {
+impl GamesList {
+    pub fn with(items: Vec<MatchDisplay>) -> GamesList {
         GamesList {
             state: ListState::default(),
             items,
         }
     }
 
-    pub fn default(items: Vec<T>) -> GamesList<T> {
+    pub fn default(items: Vec<MatchDisplay>) -> GamesList {
         GamesList {
             state: ListState::default(),
             items,
@@ -229,7 +233,7 @@ impl<T> GamesList<T> {
         self.state.select(None);
     }
 
-    pub fn get_item(&mut self) -> Option<&T> {
+    pub fn get_item(&mut self) -> Option<&MatchDisplay> {
         match self.state.selected() {
             None => return None,
             Some(i) => return Some(&self.items[i]),

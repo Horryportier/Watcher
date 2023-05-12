@@ -322,7 +322,7 @@ impl MatchDisplay {
         MatchDisplay(entry)
     }
 
-    pub fn list(&mut self, name: &str) -> Vec<Spans> {
+    pub fn list(&mut self, name: String) -> Vec<Spans> {
         let text = self
             .0
             .info
@@ -385,12 +385,11 @@ impl MatchDisplay {
 
                     Spans::from(vec![
                         Span::from("    "),
-                        Span::styled(format!("{}  ", r.team_position), cyan),
-                        Span::styled(format!("{}  ", r.summoner_name), name_red),
-                        Span::styled(format!("{}    |", r.champion_name), yellow),
-                        Span::styled(format!("{}  ", b.team_position), cyan),
-                        Span::styled(format!("{}  ", b.team_position), name_blue),
-                        Span::styled(format!("{}  ", b.team_position), yellow),
+                        Span::styled(format!("{: >2}", r.team_position), cyan),
+                        Span::styled(format!("{: <14}", r.summoner_name), name_red),
+                        Span::styled(format!("{: <2}{: <2}", r.champion_name, "|"), yellow),
+                        Span::styled(format!("{}/{}/{}", r.kills, r.deaths, r.assists), cyan),
+                        Span::styled(format!("{: <14}", r.total_minions_killed), green),
                     ])
                 })
                 .collect::<Vec<Spans>>(),

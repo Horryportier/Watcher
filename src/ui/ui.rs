@@ -1,5 +1,7 @@
 use std::{
-    io, thread,
+    io,
+    ops::Index,
+    thread,
     time::{Duration, Instant},
 };
 
@@ -8,16 +10,19 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use riven::models::match_v5::Participant;
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    text::Spans,
+    text::{Span, Spans},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     Frame, Terminal,
 };
 
-use super::app::{App, CurrentSearch, Games, Msg};
+use crate::utils::MatchDisplay;
+
+use super::app::{App, Games, Msg};
 
 pub async fn ui() -> Result<(), io::Error> {
     enable_raw_mode()?;
@@ -150,31 +155,55 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
         .split(area);
+    let mut name: String = "".to_string();
+    match &app.data.current_search {
+        Some(i) => name = i.1.clone(),
+        None => name = "".to_string().clone(),
+    };
 
-    let mut name = app
-        .data
-        .current_search
-        .unwrap_or(CurrentSearch("UNKNOWN".to_string(), "UNKNOWN".to_string()))
-        .1;
     let mut items: Vec<ListItem> = vec![];
     let mut state = ListState::default();
+    let mut curr_game: Vec<Spans> = vec![Spans::from("no data")];
+    let mut selected: MatchDisplay;
     match app.data.games.clone() {
-        Games::G(mut g) => {
-            g.items
-                .iter_mut()
-                .map(|f| items.push(ListItem::new(f.clone().list(&name.clone()))));
+        Games::G(g) => {
+            state = g.state;
+            for (i, game) in g.items.clone().into_iter().enumerate() {
+                let mut text: Span = Span::from("");
+                let mut id: Vec<&Participant> = game
+                    .0
+                    .info
+                    .participants
+                    .iter()
+                    .filter(|f| f.summoner_name == name)
+                    .collect();
+                if id.len() != 0 {
+                    if id.pop().unwrap().win {
+                        text = Span::styled("win", Style::default().fg(tui::style::Color::Green))
+                    } else {
+                        text = Span::styled("lose", Style::default().fg(tui::style::Color::Red))
+                    }
+                }
+                items.push(ListItem::new(text));
+            }
+            selected = g.items.index(state.selected().unwrap_or(0)).clone();
+            curr_game = selected.spans();
         }
         Games::N(n) => items.append(&mut vec![ListItem::new(n)]),
     };
     let list = List::new(items)
-        .block(Block::default().title("Steups"))
+        .block(Block::default().borders(Borders::ALL))
         .style(Style::default().fg(tui::style::Color::Gray))
         .highlight_style(
             Style::default()
                 .fg(tui::style::Color::LightCyan)
                 .add_modifier(Modifier::BOLD),
-        );
-    f.render_stateful_widget(list, chunks[1], &mut state)
+        )
+        .highlight_symbol("=>");
+    f.render_stateful_widget(list, chunks[0], &mut state);
+
+    let paragraph = Paragraph::new(curr_game).block(Block::default().borders(Borders::ALL));
+    f.render_widget(paragraph, chunks[1]);
 }
 
 fn draw_footer<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
@@ -190,7 +219,7 @@ async fn handle_keys(timeout: Duration, app: &mut App) -> io::Result<Option<Msg>
                 KeyCode::Char('f') => {
                     return Ok(Some(Msg::Search(
                         riven::consts::PlatformRoute::EUN1,
-                        "HorryPortier6".to_string(),
+                        "NOTJOHNYS".to_string(),
                     )))
                 }
                 KeyCode::Tab => {
