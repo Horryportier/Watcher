@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     io,
     ops::Index,
     thread,
@@ -10,7 +11,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use riven::models::match_v5::Participant;
+use riven::{consts::PlatformRoute, models::match_v5::Participant};
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout, Rect},
@@ -20,9 +21,9 @@ use tui::{
     Frame, Terminal,
 };
 
-use crate::utils::MatchDisplay;
+use crate::utils::{MatchDisplay, VecSpans};
 
-use super::app::{App, Games, Msg};
+use super::app::{App, Games, Msg, Window};
 
 pub async fn ui() -> Result<(), io::Error> {
     enable_raw_mode()?;
@@ -104,9 +105,35 @@ fn draw_header<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 
     let paragraph = Paragraph::new(text).block(Block::default().borders(Borders::ALL));
     f.render_widget(paragraph, chunks[0]);
+    {
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
+            .split(chunks[1]);
 
-    let paragraph = Paragraph::new("input").block(Block::default().borders(Borders::ALL));
-    f.render_widget(paragraph, chunks[1]);
+        let text = app.clone().input.get();
+
+        let paragraph = Paragraph::new(text).block(Block::default().borders(Borders::ALL));
+        f.render_widget(paragraph, chunks[0]);
+
+        let items: Vec<ListItem> = app
+            .route_map
+            .items
+            .iter()
+            .map(|f| ListItem::new(f.0.as_str()))
+            .collect();
+        let list = List::new(items)
+            .block(Block::default().borders(Borders::ALL))
+            .style(Style::default().fg(tui::style::Color::Gray))
+            .highlight_style(
+                Style::default()
+                    .fg(tui::style::Color::LightCyan)
+                    .add_modifier(Modifier::BOLD),
+            )
+            .highlight_symbol("=>");
+
+        f.render_stateful_widget(list, chunks[1], &mut app.route_map.state);
+    }
 }
 
 fn draw_conntent<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
@@ -150,11 +177,13 @@ fn draw_masteries<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     let paragraph = Paragraph::new(text).block(Block::default().borders(Borders::ALL));
     f.render_widget(paragraph, area);
 }
+
 fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
         .split(area);
+
     let mut name: String = "".to_string();
     match &app.data.current_search {
         Some(i) => name = i.1.clone(),
@@ -207,37 +236,58 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 }
 
 fn draw_footer<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let paragraph = Paragraph::new("footer").block(Block::default().borders(Borders::ALL));
+    let paragraph =
+        Paragraph::new(format!("{:?}", app.focus)).block(Block::default().borders(Borders::ALL));
     f.render_widget(paragraph, area);
 }
 
 async fn handle_keys(timeout: Duration, app: &mut App) -> io::Result<Option<Msg>> {
     if crossterm::event::poll(timeout)? {
-        if let Event::Key(key) = event::read()? {
-            match key.code {
-                KeyCode::Char('q') => return Ok(Some(Msg::Quit)),
-                KeyCode::Char('f') => {
-                    return Ok(Some(Msg::Search(
-                        riven::consts::PlatformRoute::EUN1,
-                        "NOTJOHNYS".to_string(),
-                    )))
+        if app.focus.unwrap_or(super::app::Window::Header) != Window::Input {
+            if let Event::Key(key) = event::read()? {
+                match key.code {
+                    KeyCode::Char('q') => return Ok(Some(Msg::Quit)),
+                    KeyCode::Char('f') => {
+                        return Ok(Some(Msg::Search(
+                            riven::consts::PlatformRoute::EUN1,
+                            "NOTJOHNYS".to_string(),
+                        )))
+                    }
+                    KeyCode::Tab => {
+                        app.focus = Some(app.focus.unwrap_or(super::app::Window::Header).next())
+                    }
+                    KeyCode::Char('j') => app.down(),
+                    KeyCode::Down => app.down(),
+                    KeyCode::Up => app.up(),
+                    KeyCode::Char('k') => app.up(),
+                    KeyCode::Char('i') => return Ok(Some(Msg::Focus(super::app::Window::Input))),
+                    KeyCode::Char('r') => return Ok(Some(Msg::Focus(super::app::Window::Route))),
+                    //KeyCode::Esc => app.pans/fn
+                    //ipub tems.unselect(),
+                    //KeyCode::Enter => match app.items.get_item() {
+                    //    None => panic!("no item"),
+                    //    Some(t) => match change(t.as_str()) {
+                    //        Err(e) => panic!("{}", e),
+                    //        Ok(_) => {}
+                    //    },
+                    //},
+                    _ => {}
                 }
-                KeyCode::Tab => {
-                    app.focus = Some(app.focus.unwrap_or(super::app::Window::Header).next())
+            }
+        }
+        if app.focus.unwrap_or(Window::Input) == Window::Input {
+            if let Event::Key(key) = event::read()? {
+                match key.code {
+                    KeyCode::Tab => return Ok(Some(Msg::Focus(Window::List))),
+                    KeyCode::Enter => {
+                        let tmp = app.clone().input.get();
+                        app.input.clear();
+                        return Ok(Some(Msg::Search(riven::consts::PlatformRoute::EUN1, tmp)));
+                    }
+                    KeyCode::Char(c) => app.input.append(c.to_string()),
+                    KeyCode::Backspace => app.input.delete(),
+                    _ => {}
                 }
-                KeyCode::Char('j') => app.down(),
-                KeyCode::Down => app.down(),
-                KeyCode::Up => app.up(),
-                KeyCode::Char('k') => app.up(),
-                //KeyCode::Esc => app.items.unselect(),
-                //KeyCode::Enter => match app.items.get_item() {
-                //    None => panic!("no item"),
-                //    Some(t) => match change(t.as_str()) {
-                //        Err(e) => panic!("{}", e),
-                //        Ok(_) => {}
-                //    },
-                //},
-                _ => {}
             }
         }
     }

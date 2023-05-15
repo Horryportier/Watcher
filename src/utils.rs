@@ -14,6 +14,16 @@ use tui::{
     text::{Span, Spans},
 };
 
+pub trait  VecSpans {
+    fn spans(&self) -> Vec<Spans>;
+}
+
+pub trait With {
+    type Struct;
+    fn with(entry:  Self::Struct) -> Self;
+
+}
+
 #[derive(Clone)]
 pub struct SummonerDisplay(pub Summoner);
 
@@ -25,42 +35,45 @@ impl Display for SummonerDisplay {
             r###"
 {}  {}:{}
                            "###,
-            entry
-                .name
-                .clone()
-                .with(Color::Blue)
-                .attribute(crossterm::style::Attribute::Bold)
-                .attribute(crossterm::style::Attribute::Underlined),
-            "lvl".with(Color::Reset),
-            entry.summoner_level.to_string().with(Color::Cyan)
-        );
+                           entry
+                           .name
+                           .clone()
+                           .with(Color::Blue)
+                           .attribute(crossterm::style::Attribute::Bold)
+                           .attribute(crossterm::style::Attribute::Underlined),
+                           "lvl".with(Color::Reset),
+                           entry.summoner_level.to_string().with(Color::Cyan)
+                          );
 
         write!(f, "{}", text)
-    }
+        }
 }
 
-impl SummonerDisplay {
-    pub fn with(entry: Summoner) -> SummonerDisplay {
+impl With for SummonerDisplay {
+    type Struct =  Summoner;
+    fn with(entry: Self::Struct) -> SummonerDisplay {
         SummonerDisplay(entry)
     }
-    pub fn spans(&self) -> Vec<Spans> {
+}
+impl VecSpans for SummonerDisplay {
+    fn spans(&self) -> Vec<Spans> {
         let entry = &self.0;
         vec![Spans::from(vec![
-            Span::from("  "),
-            Span::styled(
-                entry.name.clone(),
-                Style::default()
-                    .fg(style::Color::Green)
-                    .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
-            ),
-            Span::from("    "),
-            Span::styled("lvl", Style::default().fg(style::Color::Reset)),
-            Span::from(":"),
-            Span::styled(
-                entry.summoner_level.to_string(),
-                Style::default().fg(style::Color::Yellow),
-            ),
-            Span::from("\n"),
+                         Span::from("  "),
+                         Span::styled(
+                             entry.name.clone(),
+                             Style::default()
+                             .fg(style::Color::Green)
+                             .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
+                             ),
+                             Span::from("    "),
+                             Span::styled("lvl", Style::default().fg(style::Color::Reset)),
+                             Span::from(":"),
+                             Span::styled(
+                                 entry.summoner_level.to_string(),
+                                 Style::default().fg(style::Color::Yellow),
+                                 ),
+                                 Span::from("\n"),
         ])]
     }
 }
@@ -81,96 +94,99 @@ impl fmt::Display for LeagueEntryDisplay {
     {}
             "###,
             entry
-                .summoner_name
-                .as_str()
-                .with(crossterm::style::Color::Yellow),
+            .summoner_name
+            .as_str()
+            .with(crossterm::style::Color::Yellow),
             entry
-                .queue_type
-                .to_string()
-                .with(Color::Grey)
-                .attribute(crossterm::style::Attribute::Bold)
-                .attribute(crossterm::style::Attribute::Underlined),
+            .queue_type
+            .to_string()
+            .with(Color::Grey)
+            .attribute(crossterm::style::Attribute::Bold)
+            .attribute(crossterm::style::Attribute::Underlined),
             entry
-                .tier
-                .unwrap_or(Tier::IRON)
-                .to_string()
-                .with(Color::Yellow),
-            entry
-                .rank
-                .unwrap_or(riven::consts::Division::I)
-                .to_string()
-                .with(Color::Blue),
-            entry.wins.to_string().with(Color::Green),
-            entry.losses.to_string().with(Color::Red),
-            (entry.wins * 100 / (entry.wins + entry.losses))
-                .to_string()
-                .with(Color::Cyan)
-                .attribute(crossterm::style::Attribute::Bold),
-            entry
-                .hot_streak
-                .then(|| "🔥")
-                .unwrap_or("❄")
-                .attribute(crossterm::style::Attribute::Underlined)
-        );
-        write!(f, "{}", text)
+            .tier
+            .unwrap_or(Tier::IRON)
+.to_string()
+    .with(Color::Yellow),
+    entry
+    .rank
+    .unwrap_or(riven::consts::Division::I)
+    .to_string()
+.with(Color::Blue),
+entry.wins.to_string().with(Color::Green),
+entry.losses.to_string().with(Color::Red),
+(entry.wins * 100 / (entry.wins + entry.losses))
+    .to_string()
+.with(Color::Cyan)
+    .attribute(crossterm::style::Attribute::Bold),
+    entry
+    .hot_streak
+    .then(|| "🔥")
+    .unwrap_or("❄")
+.attribute(crossterm::style::Attribute::Underlined)
+    );
+    write!(f, "{}", text)
     }
 }
 
-impl LeagueEntryDisplay {
-    pub fn with(entry: LeagueEntry) -> LeagueEntryDisplay {
+impl With for LeagueEntryDisplay {
+    type Struct = LeagueEntry;
+    fn with(entry: LeagueEntry) -> LeagueEntryDisplay {
         LeagueEntryDisplay(entry)
     }
-    pub fn spans(&self) -> Vec<Spans> {
+}
+impl VecSpans for LeagueEntryDisplay {
+    fn spans(&self) -> Vec<Spans> {
         let entry = &self.0;
         vec![
             Spans::from(vec![
-                Span::from("  "),
-                Span::styled(
-                    entry.queue_type.to_string(),
-                    Style::default()
-                        .fg(style::Color::Gray)
-                        .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
-                ),
+                        Span::from("  "),
+                        Span::styled(
+                            entry.queue_type.to_string(),
+                            Style::default()
+                            .fg(style::Color::Gray)
+                            .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
+                            ),
             ]),
             Spans::from(vec![
-                Span::from("    "),
-                Span::styled(
-                    entry.tier.unwrap_or(Tier::UNRANKED).to_string(),
-                    Style::default().fg(style::Color::Yellow),
-                ),
-                Span::from("  "),
-                Span::styled(
-                    entry.rank.unwrap_or(riven::consts::Division::I).to_string(),
-                    Style::default().fg(style::Color::Blue),
-                ),
+                        Span::from("    "),
+                        Span::styled(
+                            entry.tier.unwrap_or(Tier::UNRANKED).to_string(),
+                            Style::default().fg(style::Color::Yellow),
+                            ),
+                            Span::from("  "),
+                            Span::styled(
+                                entry.rank.unwrap_or(riven::consts::Division::I).to_string(),
+                                Style::default().fg(style::Color::Blue),
+                                ),
             ]),
             Spans::from(vec![
-                Span::from("    "),
-                Span::styled(
-                    entry.wins.to_string(),
-                    Style::default().fg(style::Color::Green),
-                ),
-                Span::from("/"),
-                Span::styled(
-                    entry.losses.to_string(),
-                    Style::default().fg(style::Color::Red),
-                ),
-                Span::from("  "),
-                Span::styled(
-                    (entry.wins * 100 / (entry.wins + entry.losses)).to_string(),
-                    Style::default().fg(style::Color::Cyan),
-                ),
-                Span::from("%"),
+                        Span::from("    "),
+                        Span::styled(
+                            entry.wins.to_string(),
+                            Style::default().fg(style::Color::Green),
+                            ),
+                            Span::from("/"),
+                            Span::styled(
+                                entry.losses.to_string(),
+                                Style::default().fg(style::Color::Red),
+                                ),
+                                Span::from("  "),
+                                Span::styled(
+                                    (entry.wins * 100 / (entry.wins + entry.losses)).to_string(),
+                                    Style::default().fg(style::Color::Cyan),
+                                    ),
+                                    Span::from("%"),
             ]),
             Spans::from(vec![
-                Span::from("    "),
-                entry
-                    .hot_streak
-                    .then(|| Span::from("🔥"))
-                    .unwrap_or(Span::from("❄")),
-                Span::from("\n"),
+                        Span::from("    "),
+                        entry
+                        .hot_streak
+                        .then(|| Span::from("🔥"))
+                        .unwrap_or(Span::from("❄")),
+                        Span::from("\n"),
             ]),
-        ]
+            ]
     }
 }
 
@@ -183,48 +199,51 @@ impl Display for ChampionMasteryDisplay {
         let text = format!(
             "{: <9}  {: >7}  ({})",
             entry
-                .champion_id
-                .name()
-                .unwrap_or("UNKNOWN")
-                .with(Color::Green),
+            .champion_id
+            .name()
+            .unwrap_or("UNKNOWN")
+            .with(Color::Green),
             entry.champion_points.to_string().with(Color::Yellow),
             entry
-                .champion_level
-                .to_string()
-                .with(Color::Cyan)
-                .attribute(crossterm::style::Attribute::Bold)
-        );
+            .champion_level
+            .to_string()
+            .with(Color::Cyan)
+            .attribute(crossterm::style::Attribute::Bold)
+            );
         write!(f, "{}", text)
     }
 }
 
-impl ChampionMasteryDisplay {
-    pub fn with(entry: ChampionMastery) -> ChampionMasteryDisplay {
+impl With for ChampionMasteryDisplay {
+    type Struct = ChampionMastery;
+    fn with(entry: ChampionMastery) -> ChampionMasteryDisplay {
         ChampionMasteryDisplay(entry)
     }
+}
 
-    pub fn spans(&self) -> Vec<Spans> {
+impl VecSpans for ChampionMasteryDisplay {
+    fn spans(&self) -> Vec<Spans> {
         let entry = &self.0;
         vec![Spans::from(vec![
-            Span::from("  "),
-            Span::styled(
-                entry.champion_id.name().unwrap_or("UNKNOWN"),
-                Style::default()
-                    .fg(style::Color::Green)
-                    .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
-            ),
-            Span::from("    "),
-            Span::styled(
-                entry.champion_points.to_string(),
-                Style::default().fg(style::Color::Yellow),
-            ),
-            Span::from("  ("),
-            Span::styled(
-                entry.champion_level.to_string(),
-                Style::default().fg(style::Color::Cyan),
-            ),
-            Span::from(")"),
-            Span::from("\n"),
+                         Span::from("  "),
+                         Span::styled(
+                             entry.champion_id.name().unwrap_or("UNKNOWN"),
+                             Style::default()
+                             .fg(style::Color::Green)
+                             .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
+                             ),
+                             Span::from("    "),
+                             Span::styled(
+                                 entry.champion_points.to_string(),
+                                 Style::default().fg(style::Color::Yellow),
+                                 ),
+                                 Span::from("  ("),
+                                 Span::styled(
+                                     entry.champion_level.to_string(),
+                                     Style::default().fg(style::Color::Cyan),
+                                     ),
+                                     Span::from(")"),
+                                     Span::from("\n"),
         ])]
     }
 }
@@ -252,76 +271,79 @@ Players:
     {}
             "###,
             entry
-                .queue_id
-                .to_string()
-                .with(Color::Reset)
-                .attribute(crossterm::style::Attribute::Bold),
+            .queue_id
+            .to_string()
+            .with(Color::Reset)
+            .attribute(crossterm::style::Attribute::Bold),
             team_blue
-                .win
-                .then(|| "win".with(Color::Green))
-                .unwrap_or("lose".with(Color::Red)),
-            team_blue
-                .bans
-                .iter()
-                .map(|f| format!(
-                    "{}",
-                    f.champion_id
-                        .name()
-                        .unwrap_or("UNKNOWN")
-                        .with(Color::Yellow)
-                ))
-                .collect::<Vec<_>>()
-                .join(", "),
-            entry
-                .participants
-                .iter()
-                .filter(|f| f.team_id == Team::BLUE)
-                .map(|f| format!(
-                    "{} {} {}",
-                    f.clone().role.with(Color::Cyan),
-                    f.clone().champion_name.with(Color::Magenta),
-                    f.clone().summoner_name.with(Color::Yellow)
-                ))
-                .collect::<Vec<_>>()
-                .join("\n   "),
-            team_red
-                .win
-                .then(|| "win".with(Color::Green))
-                .unwrap_or("lose".with(Color::Red)),
-            team_red
-                .bans
-                .iter()
-                .map(|f| format!(
-                    "{}",
-                    f.champion_id
-                        .name()
-                        .unwrap_or("UNKNOWN")
-                        .with(Color::Yellow)
-                ))
-                .collect::<Vec<_>>()
-                .join(", "),
-            entry
-                .participants
-                .iter()
-                .filter(|f| f.team_id == Team::RED)
-                .map(|f| format!(
-                    "{} {} {}",
-                    f.clone().role.with(Color::Cyan),
-                    f.clone().champion_name.with(Color::Magenta),
-                    f.clone().summoner_name.with(Color::Yellow)
-                ))
-                .collect::<Vec<_>>()
-                .join("\n   "),
-        );
-        write!(f, "{}", text)
+            .win
+        .then(|| "win".with(Color::Green))
+        .unwrap_or("lose".with(Color::Red)),
+        team_blue
+    .bans
+.iter()
+    .map(|f| format!(
+            "{}",
+            f.champion_id
+            .name()
+            .unwrap_or("UNKNOWN")
+            .with(Color::Yellow)
+            ))
+.collect::<Vec<_>>()
+    .join(", "),
+    entry
+    .participants
+    .iter()
+.filter(|f| f.team_id == Team::BLUE)
+    .map(|f| format!(
+            "{} {} {}",
+            f.clone().role.with(Color::Cyan),
+            f.clone().champion_name.with(Color::Magenta),
+            f.clone().summoner_name.with(Color::Yellow)
+            ))
+.collect::<Vec<_>>()
+    .join("\n   "),
+    team_red
+    .win
+    .then(|| "win".with(Color::Green))
+    .unwrap_or("lose".with(Color::Red)),
+    team_red
+    .bans
+.iter()
+    .map(|f| format!(
+            "{}",
+            f.champion_id
+            .name()
+            .unwrap_or("UNKNOWN")
+            .with(Color::Yellow)
+            ))
+.collect::<Vec<_>>()
+    .join(", "),
+    entry
+    .participants
+    .iter()
+.filter(|f| f.team_id == Team::RED)
+    .map(|f| format!(
+            "{} {} {}",
+            f.clone().role.with(Color::Cyan),
+            f.clone().champion_name.with(Color::Magenta),
+            f.clone().summoner_name.with(Color::Yellow)
+            ))
+.collect::<Vec<_>>()
+    .join("\n   "),
+    );
+write!(f, "{}", text)
+}
+}
+
+impl With for  MatchDisplay {
+    type Struct = Match;
+    fn with(entry: Match) -> MatchDisplay {
+        MatchDisplay(entry)
     }
 }
 
-impl MatchDisplay {
-    pub fn with(entry: Match) -> MatchDisplay {
-        MatchDisplay(entry)
-    }
-
+impl  MatchDisplay{
     pub fn list(&mut self, name: String) -> Vec<Spans> {
         let text = self
             .0
@@ -333,23 +355,25 @@ impl MatchDisplay {
                     Span::styled(
                         "won",
                         Style::default()
-                            .fg(style::Color::Green)
-                            .add_modifier(Modifier::BOLD),
-                    )
+                        .fg(style::Color::Green)
+                        .add_modifier(Modifier::BOLD),
+                        )
                 } else {
                     Span::styled(
                         "lose",
                         Style::default()
-                            .fg(style::Color::Green)
-                            .add_modifier(Modifier::BOLD),
-                    )
+                        .fg(style::Color::Green)
+                        .add_modifier(Modifier::BOLD),
+                        )
                 }
             })
-            .collect::<Vec<Span>>();
+        .collect::<Vec<Span>>();
         vec![Spans::from(text)]
     }
+}
 
-    pub fn spans(&mut self) -> Vec<Spans> {
+impl VecSpans for MatchDisplay {
+    fn spans(&self) -> Vec<Spans> {
         let name_red: Style = Style::default().fg(style::Color::Red);
         let name_blue: Style = Style::default().fg(style::Color::Red);
         let green: Style = Style::default().fg(style::Color::Green);
@@ -369,31 +393,31 @@ impl MatchDisplay {
             .collect::<Vec<_>>();
 
         let mut sapans = vec![Spans::from(vec![Span::styled(
-            format!("{}", entry.game_mode),
-            Style::default()
+                format!("{}", entry.game_mode),
+                Style::default()
                 .fg(style::Color::Reset)
                 .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
-        )])];
+                )])];
 
         sapans.append(
             &mut team_red
-                .iter()
-                .enumerate()
-                .map(|f| {
-                    let (i, r) = f;
-                    let b = team_blue[i];
+            .iter()
+            .enumerate()
+            .map(|f| {
+                let (i, r) = f;
+                let b = team_blue[i];
 
-                    Spans::from(vec![
-                        Span::from("    "),
-                        Span::styled(format!("{: >2}", r.team_position), cyan),
-                        Span::styled(format!("{: <14}", r.summoner_name), name_red),
-                        Span::styled(format!("{: <2}{: <2}", r.champion_name, "|"), yellow),
-                        Span::styled(format!("{}/{}/{}", r.kills, r.deaths, r.assists), cyan),
-                        Span::styled(format!("{: <14}", r.total_minions_killed), green),
-                    ])
-                })
-                .collect::<Vec<Spans>>(),
-        );
+                Spans::from(vec![
+                            Span::from("    "),
+                            Span::styled(format!("{: >2}", r.team_position), cyan),
+                            Span::styled(format!("{: <14}", r.summoner_name), name_red),
+                            Span::styled(format!("{: <2}{: <2}", r.champion_name, "|"), yellow),
+                            Span::styled(format!("{}/{}/{}", r.kills, r.deaths, r.assists), cyan),
+                            Span::styled(format!("{: <14}", r.total_minions_killed), green),
+                ])
+            })
+            .collect::<Vec<Spans>>(),
+            );
 
         sapans
     }

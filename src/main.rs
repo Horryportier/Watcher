@@ -3,7 +3,7 @@ use std::env::args;
 use api::api::{get_games, get_masteries, get_rank, get_summoner};
 use riven::consts::PlatformRoute;
 use ui::ui::ui;
-use utils::{ChampionMasteryDisplay, LeagueEntryDisplay, SummonerDisplay, MatchDisplay};
+use utils::{ChampionMasteryDisplay, LeagueEntryDisplay, SummonerDisplay, MatchDisplay, With};
 
 mod api;
 mod ui;
