@@ -1,7 +1,11 @@
-use std::{ collections::HashMap};
+use std::collections::HashMap;
 
 use riven::consts::PlatformRoute;
-use tui::widgets::{ ListState};
+use tui::{
+    style::Style,
+    text::{Span, Spans},
+    widgets::ListState,
+};
 
 use crate::{
     api::api::{get_games, get_masteries, get_rank, get_summoner},
@@ -63,7 +67,7 @@ pub struct App {
     pub data: Data,
     pub input: Input,
     pub route: PlatformRoute,
-    pub route_map: RouteList
+    pub route_map: RouteList,
 }
 
 #[derive(Clone)]
@@ -103,7 +107,10 @@ impl App {
         map.insert("eune".to_string(), PlatformRoute::EUN1);
         map.insert("euw".to_string(), PlatformRoute::EUW1);
 
-        let route_map = RouteList { state: ListState::default(), items: map};
+        let route_map = RouteList {
+            state: ListState::default(),
+            items: map,
+        };
         App {
             state: State::Idle,
             msg: None,
@@ -147,14 +154,14 @@ impl App {
 
                             let res =
                                 get_rank(*route, &self.data.current_search.as_ref().unwrap().0)
-                                .await;
+                                    .await;
                             let entry: Option<Vec<LeagueEntryDisplay>> = match res {
                                 Err(_) => None,
                                 Ok(rank) => Some(
                                     rank.iter()
-                                    .map(|f| LeagueEntryDisplay::with(f.clone()))
-                                    .collect(),
-                                    ),
+                                        .map(|f| LeagueEntryDisplay::with(f.clone()))
+                                        .collect(),
+                                ),
                             };
                             self.data.rank = entry;
 
@@ -162,15 +169,15 @@ impl App {
                                 *route,
                                 &self.data.current_search.as_ref().unwrap().0,
                                 10,
-                                )
-                                .await;
+                            )
+                            .await;
                             let entry: Option<Vec<ChampionMasteryDisplay>> = match res {
                                 Err(_) => None,
                                 Ok(m) => Some(
                                     m.iter()
-                                    .map(|f| ChampionMasteryDisplay::with(f.clone()))
-                                    .collect(),
-                                    ),
+                                        .map(|f| ChampionMasteryDisplay::with(f.clone()))
+                                        .collect(),
+                                ),
                             };
                             self.data.masteries = entry;
 
@@ -179,7 +186,7 @@ impl App {
                                 Err(_) => None,
                                 Ok(rank) => Some(
                                     rank.iter().map(|f| MatchDisplay::with(f.clone())).collect(),
-                                    ),
+                                ),
                             };
                             match entry {
                                 Some(e) => self.data.games = Games::G(GamesList::with(e)),
@@ -218,7 +225,8 @@ impl App {
                 Games::N(_) => {}
             },
             Window::Route => {
-                self.route_map.previous()
+                self.route_map.previous();
+                self.route = self.route_map.get_item()
             }
             _ => {}
         }
@@ -230,7 +238,8 @@ impl App {
                 Games::N(_) => {}
             },
             Window::Route => {
-                self.route_map.next()
+                self.route_map.next();
+                self.route = self.route_map.get_item()
             }
             _ => {}
         }
@@ -259,20 +268,23 @@ impl GamesList {
     }
 
     pub fn next(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.items.len() - 1 {
-                    0
-                } else {
-                    i + 1
+        if !self.items.is_empty() {
+            let i = match self.state.selected() {
+                Some(i) => {
+                    if i >= self.items.len() - 1 {
+                        0
+                    } else {
+                        i + 1
+                    }
                 }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
+                None => 0,
+            };
+            self.state.select(Some(i));
+        }
     }
 
     pub fn previous(&mut self) {
+        if !self.items.is_empty() {
         let i = match self.state.selected() {
             Some(i) => {
                 if i <= 0 {
@@ -284,6 +296,7 @@ impl GamesList {
             None => 0,
         };
         self.state.select(Some(i));
+        }
     }
 
     pub fn unselect(&mut self) {
@@ -369,10 +382,41 @@ impl RouteList {
         self.state.select(None);
     }
 
-    // pub fn get_item(&mut self) -> Option<PlatformRoute> {
-    //     match self.state.selected() {
-    //         None => return None,
-    //         Some(i) =>  return  Some(*self.items.index(i))
-    //     };
-    // }
+    pub fn print(&mut self) -> Vec<Span> {
+        let mut v: Vec<Span> = vec![];
+
+        for (i, s) in self.items.keys().into_iter().enumerate() {
+            if self.state.selected().unwrap_or(0) == i {
+                v.append(
+                    &mut [
+                        Span::styled(s, Style::default().fg(tui::style::Color::Cyan)),
+                        Span::from(" | "),
+                    ]
+                    .to_vec(),
+                );
+                continue;
+            }
+            v.append(
+                &mut [
+                    Span::styled(s, Style::default().fg(tui::style::Color::Red)),
+                    Span::from(" | "),
+                ]
+                .to_vec(),
+            );
+        }
+        v
+    }
+
+    pub fn get_item(&mut self) -> PlatformRoute {
+        for (i, s) in self.items.keys().into_iter().enumerate() {
+            if self.state.selected().unwrap_or(0) == i {
+                let (_, route) = self
+                    .items
+                    .get_key_value(s)
+                    .unwrap_or((&"kr".to_string(), &PlatformRoute::KR));
+                return *route;
+            }
+        }
+        PlatformRoute::KR
+    }
 }

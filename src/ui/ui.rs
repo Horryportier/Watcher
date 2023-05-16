@@ -116,23 +116,9 @@ fn draw_header<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
         let paragraph = Paragraph::new(text).block(Block::default().borders(Borders::ALL));
         f.render_widget(paragraph, chunks[0]);
 
-        let items: Vec<ListItem> = app
-            .route_map
-            .items
-            .iter()
-            .map(|f| ListItem::new(f.0.as_str()))
-            .collect();
-        let list = List::new(items)
-            .block(Block::default().borders(Borders::ALL))
-            .style(Style::default().fg(tui::style::Color::Gray))
-            .highlight_style(
-                Style::default()
-                    .fg(tui::style::Color::LightCyan)
-                    .add_modifier(Modifier::BOLD),
-            )
-            .highlight_symbol("=>");
-
-        f.render_stateful_widget(list, chunks[1], &mut app.route_map.state);
+        let routes = Spans::from(app.route_map.print());
+        let paragraph = Paragraph::new(routes).block(Block::default().borders(Borders::ALL));
+        f.render_widget(paragraph, chunks[1]);
     }
 }
 
@@ -192,7 +178,7 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 
     let mut items: Vec<ListItem> = vec![];
     let mut state = ListState::default();
-    let mut curr_game: Vec<Spans> = vec![Spans::from("no data")];
+    let mut curr_game: Vec<Spans> = no_data();
     let mut selected: MatchDisplay;
     match app.data.games.clone() {
         Games::G(g) => {
@@ -215,8 +201,10 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
                 }
                 items.push(ListItem::new(text));
             }
-            selected = g.items.index(state.selected().unwrap_or(0)).clone();
-            curr_game = selected.spans();
+            if g.items.len() != 0 {
+                selected = g.items.index(state.selected().unwrap_or(0)).clone();
+                curr_game = selected.spans();
+            }
         }
         Games::N(n) => items.append(&mut vec![ListItem::new(n)]),
     };
@@ -237,7 +225,7 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 
 fn draw_footer<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     let paragraph =
-        Paragraph::new(format!("{:?}", app.focus)).block(Block::default().borders(Borders::ALL));
+        Paragraph::new(format!("{:?}", app.route)).block(Block::default().borders(Borders::ALL));
     f.render_widget(paragraph, area);
 }
 
@@ -282,7 +270,7 @@ async fn handle_keys(timeout: Duration, app: &mut App) -> io::Result<Option<Msg>
                     KeyCode::Enter => {
                         let tmp = app.clone().input.get();
                         app.input.clear();
-                        return Ok(Some(Msg::Search(riven::consts::PlatformRoute::EUN1, tmp)));
+                        return Ok(Some(Msg::Search(app.route, tmp)));
                     }
                     KeyCode::Char(c) => app.input.append(c.to_string()),
                     KeyCode::Backspace => app.input.delete(),
@@ -292,4 +280,8 @@ async fn handle_keys(timeout: Duration, app: &mut App) -> io::Result<Option<Msg>
         }
     }
     Ok(None)
+}
+
+pub fn no_data() -> Vec<Spans<'static>> {
+    vec![Spans::from("no data")]
 }

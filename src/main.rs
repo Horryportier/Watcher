@@ -15,6 +15,8 @@ const ROUTE: PlatformRoute = PlatformRoute::EUN1;
 async fn main() -> Result<(), ()> {
     let args: Vec<String> = args().collect();
 
+    
+    
     if args.len() == 1 {
         let _ = ui().await;
     }
