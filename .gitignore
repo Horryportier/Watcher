@@ -3,3 +3,9 @@ test/
 summoner.json
 build/
 *.spec
+todo.md
+
+
+# Added by cargo
+
+/target
