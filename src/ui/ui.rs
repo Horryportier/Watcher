@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     io,
     ops::Index,
     thread,
@@ -7,11 +6,12 @@ use std::{
 };
 
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use riven::{consts::PlatformRoute, models::match_v5::Participant};
+use riven::models::match_v5::Participant;
+
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout, Rect},
@@ -21,9 +21,15 @@ use tui::{
     Frame, Terminal,
 };
 
-use crate::utils::{MatchDisplay, VecSpans};
+use crate::{
+    display::{border_color, MatchDisplay, VecSpans},
+    no_data,
+};
 
-use super::app::{App, Games, Msg, Window};
+use super::{
+    app::{App, Games, Msg},
+    keys::handle_keys,
+};
 
 pub async fn ui() -> Result<(), io::Error> {
     enable_raw_mode()?;
@@ -66,6 +72,15 @@ pub async fn ui() -> Result<(), io::Error> {
             },
             Err(_) => {}
         }
+        //let name: Option<&str> = std::option_env!("WATCHER_NAME");
+        //let region: Option<&str> = std::option_env!("WATCHER_REGION");
+        //if let Some(name) = name {
+        //    if let Some(region) = region {
+        //        app.routes.get_item(Some(region.to_string()));
+        //        msg = Some(Msg::Search(PlatformRoute::KR, name.to_string()));
+        //    }
+        //}
+
         app.msg = msg;
         app.msg().await;
 
@@ -100,10 +115,14 @@ fn draw_header<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
         .split(area);
     let text = match &app.data.summoner {
         Some(e) => e.spans(),
-        None => vec![Spans::from("No data".to_string())],
+        None => no_data!(),
     };
 
-    let paragraph = Paragraph::new(text).block(Block::default().borders(Borders::ALL));
+    let paragraph = Paragraph::new(text).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .style(border_color(super::app::Window::Header, app.focus)),
+    );
     f.render_widget(paragraph, chunks[0]);
     {
         let chunks = Layout::default()
@@ -112,12 +131,19 @@ fn draw_header<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
             .split(chunks[1]);
 
         let text = app.clone().input.get();
-
-        let paragraph = Paragraph::new(text).block(Block::default().borders(Borders::ALL));
+        let paragraph = Paragraph::new(text).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .style(border_color(super::app::Window::Input, app.focus)),
+        );
         f.render_widget(paragraph, chunks[0]);
 
-        let routes = Spans::from(app.route_map.print());
-        let paragraph = Paragraph::new(routes).block(Block::default().borders(Borders::ALL));
+        let routes = Spans::from(app.routes.print());
+        let paragraph = Paragraph::new(routes).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .style(border_color(super::app::Window::Route, app.focus)),
+        );
         f.render_widget(paragraph, chunks[1]);
     }
 }
@@ -144,10 +170,14 @@ fn draw_rank<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
             let a = e.iter().map(|f| f.spans()).collect::<Vec<_>>().concat();
             a
         }
-        None => vec![Spans::from("No data".to_string())],
+        None => no_data!(),
     };
 
-    let paragraph = Paragraph::new(text).block(Block::default().borders(Borders::ALL));
+    let paragraph = Paragraph::new(text).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .style(border_color(super::app::Window::Rank, app.focus)),
+    );
     f.render_widget(paragraph, area);
 }
 
@@ -157,10 +187,14 @@ fn draw_masteries<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
             let a = e.iter().map(|f| f.spans()).collect::<Vec<_>>().concat();
             a
         }
-        None => vec![Spans::from("No data".to_string())],
+        None => no_data!(),
     };
 
-    let paragraph = Paragraph::new(text).block(Block::default().borders(Borders::ALL));
+    let paragraph = Paragraph::new(text).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .style(border_color(super::app::Window::Masteries, app.focus)),
+    );
     f.render_widget(paragraph, area);
 }
 
@@ -178,12 +212,14 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 
     let mut items: Vec<ListItem> = vec![];
     let mut state = ListState::default();
-    let mut curr_game: Vec<Spans> = no_data();
-    let mut selected: MatchDisplay;
+    let mut curr_game: Vec<Spans> = no_data!();
+    let selected: MatchDisplay;
+
     match app.data.games.clone() {
         Games::G(g) => {
             state = g.state;
-            for (i, game) in g.items.clone().into_iter().enumerate() {
+
+            for (_, game) in g.items.clone().into_iter().enumerate() {
                 let mut text: Span = Span::from("");
                 let mut id: Vec<&Participant> = game
                     .0
@@ -192,6 +228,7 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
                     .iter()
                     .filter(|f| f.summoner_name == name)
                     .collect();
+
                 if id.len() != 0 {
                     if id.pop().unwrap().win {
                         text = Span::styled("win", Style::default().fg(tui::style::Color::Green))
@@ -199,6 +236,7 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
                         text = Span::styled("lose", Style::default().fg(tui::style::Color::Red))
                     }
                 }
+
                 items.push(ListItem::new(text));
             }
             if g.items.len() != 0 {
@@ -206,8 +244,9 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
                 curr_game = selected.spans();
             }
         }
-        Games::N(n) => items.append(&mut vec![ListItem::new(n)]),
+        Games::N => items.append(&mut vec![ListItem::new(no_data!())]),
     };
+
     let list = List::new(items)
         .block(Block::default().borders(Borders::ALL))
         .style(Style::default().fg(tui::style::Color::Gray))
@@ -219,69 +258,19 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
         .highlight_symbol("=>");
     f.render_stateful_widget(list, chunks[0], &mut state);
 
-    let paragraph = Paragraph::new(curr_game).block(Block::default().borders(Borders::ALL));
+    let paragraph = Paragraph::new(curr_game).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .style(border_color(super::app::Window::Games, app.focus)),
+    );
     f.render_widget(paragraph, chunks[1]);
 }
 
 fn draw_footer<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let paragraph =
-        Paragraph::new(format!("{:?}", app.route)).block(Block::default().borders(Borders::ALL));
+    let paragraph = Paragraph::new(format!("{:?}", app.route)).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .style(border_color(super::app::Window::Footer, app.focus)),
+    );
     f.render_widget(paragraph, area);
-}
-
-async fn handle_keys(timeout: Duration, app: &mut App) -> io::Result<Option<Msg>> {
-    if crossterm::event::poll(timeout)? {
-        if app.focus.unwrap_or(super::app::Window::Header) != Window::Input {
-            if let Event::Key(key) = event::read()? {
-                match key.code {
-                    KeyCode::Char('q') => return Ok(Some(Msg::Quit)),
-                    KeyCode::Char('f') => {
-                        return Ok(Some(Msg::Search(
-                            riven::consts::PlatformRoute::EUN1,
-                            "NOTJOHNYS".to_string(),
-                        )))
-                    }
-                    KeyCode::Tab => {
-                        app.focus = Some(app.focus.unwrap_or(super::app::Window::Header).next())
-                    }
-                    KeyCode::Char('j') => app.down(),
-                    KeyCode::Down => app.down(),
-                    KeyCode::Up => app.up(),
-                    KeyCode::Char('k') => app.up(),
-                    KeyCode::Char('i') => return Ok(Some(Msg::Focus(super::app::Window::Input))),
-                    KeyCode::Char('r') => return Ok(Some(Msg::Focus(super::app::Window::Route))),
-                    //KeyCode::Esc => app.pans/fn
-                    //ipub tems.unselect(),
-                    //KeyCode::Enter => match app.items.get_item() {
-                    //    None => panic!("no item"),
-                    //    Some(t) => match change(t.as_str()) {
-                    //        Err(e) => panic!("{}", e),
-                    //        Ok(_) => {}
-                    //    },
-                    //},
-                    _ => {}
-                }
-            }
-        }
-        if app.focus.unwrap_or(Window::Input) == Window::Input {
-            if let Event::Key(key) = event::read()? {
-                match key.code {
-                    KeyCode::Tab => return Ok(Some(Msg::Focus(Window::List))),
-                    KeyCode::Enter => {
-                        let tmp = app.clone().input.get();
-                        app.input.clear();
-                        return Ok(Some(Msg::Search(app.route, tmp)));
-                    }
-                    KeyCode::Char(c) => app.input.append(c.to_string()),
-                    KeyCode::Backspace => app.input.delete(),
-                    _ => {}
-                }
-            }
-        }
-    }
-    Ok(None)
-}
-
-pub fn no_data() -> Vec<Spans<'static>> {
-    vec![Spans::from("no data")]
 }

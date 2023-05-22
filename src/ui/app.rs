@@ -1,29 +1,29 @@
-use std::collections::HashMap;
-
 use riven::consts::PlatformRoute;
-use tui::{
-    style::Style,
-    text::{Span, Spans},
-    widgets::ListState,
-};
+use tui::{style::Style, text::Span, widgets::ListState};
 
 use crate::{
     api::api::{get_games, get_masteries, get_rank, get_summoner},
-    utils::{ChampionMasteryDisplay, LeagueEntryDisplay, MatchDisplay, SummonerDisplay, With},
+    display::{ChampionMasteryDisplay, LeagueEntryDisplay, MatchDisplay, SummonerDisplay, With},
 };
 
 #[derive(Debug, Clone)]
 pub enum State {
     Searching(String, PlatformRoute), // name PlatformRoute
     Failed(String, PlatformRoute),
+    Error(WatcherErr),
     Idle,
+}
+
+#[derive(Debug, Clone)]
+pub enum WatcherErr {
+    SearchFalied { name: String, puuid: String },
+    Riot(String),
 }
 
 #[derive(Debug, Clone)]
 pub enum Msg {
     Quit,
     Focus(Window),
-    Input(Window),
     Search(PlatformRoute, String),
 }
 
@@ -41,21 +41,25 @@ pub enum Window {
 
 impl Window {
     pub fn next(&self) -> Window {
-        let w = vec![
+        let windows = vec![
             Window::Header,
             Window::Input,
+            Window::Route,
             Window::Rank,
             Window::Masteries,
             Window::List,
             Window::Games,
             Window::Footer,
         ];
-        let i = w.iter().position(|f| f == self).unwrap_or(0);
-        if i >= w.len() - 1 {
-            w[0]
-        } else {
-            w[i + 1]
+        for (i, w) in windows.iter().enumerate() {
+            if self == w {
+                if i+1 >= windows.len() {
+                    return  windows[0];
+                }
+                return  windows[i+1]
+            }
         }
+        Window::Header
     }
 }
 
@@ -67,7 +71,7 @@ pub struct App {
     pub data: Data,
     pub input: Input,
     pub route: PlatformRoute,
-    pub route_map: RouteList,
+    pub routes: RouteList,
 }
 
 #[derive(Clone)]
@@ -84,30 +88,30 @@ pub struct CurrentSearch(pub String, pub String);
 
 #[derive(Clone)]
 pub enum Games {
-    N(String),
+    N,
     G(GamesList),
 }
 
 impl App {
     pub fn default() -> App {
-        let mut map: HashMap<String, PlatformRoute> = HashMap::new();
-        map.insert("kr".to_string(), PlatformRoute::KR);
-        map.insert("ru".to_string(), PlatformRoute::RU);
-        map.insert("br".to_string(), PlatformRoute::BR1);
-        map.insert("jp".to_string(), PlatformRoute::JP1);
-        map.insert("la1".to_string(), PlatformRoute::LA1);
-        map.insert("la2".to_string(), PlatformRoute::LA2);
-        map.insert("na".to_string(), PlatformRoute::NA1);
-        map.insert("oce".to_string(), PlatformRoute::OC1);
-        map.insert("ph".to_string(), PlatformRoute::PH2);
-        map.insert("sg".to_string(), PlatformRoute::SG2);
-        map.insert("th".to_string(), PlatformRoute::TH2);
-        map.insert("tr".to_string(), PlatformRoute::TR1);
-        map.insert("tw".to_string(), PlatformRoute::TW2);
-        map.insert("eune".to_string(), PlatformRoute::EUN1);
-        map.insert("euw".to_string(), PlatformRoute::EUW1);
+        let mut map: Vec<(String, PlatformRoute)> = vec![];
+        map.push(("kr".to_string(), PlatformRoute::KR));
+        map.push(("ru".to_string(), PlatformRoute::RU));
+        map.push(("br".to_string(), PlatformRoute::BR1));
+        map.push(("jp".to_string(), PlatformRoute::JP1));
+        map.push(("la1".to_string(), PlatformRoute::LA1));
+        map.push(("la2".to_string(), PlatformRoute::LA2));
+        map.push(("na".to_string(), PlatformRoute::NA1));
+        map.push(("oce".to_string(), PlatformRoute::OC1));
+        map.push(("ph".to_string(), PlatformRoute::PH2));
+        map.push(("sg".to_string(), PlatformRoute::SG2));
+        map.push(("th".to_string(), PlatformRoute::TH2));
+        map.push(("tr".to_string(), PlatformRoute::TR1));
+        map.push(("tw".to_string(), PlatformRoute::TW2));
+        map.push(("eune".to_string(), PlatformRoute::EUN1));
+        map.push(("euw".to_string(), PlatformRoute::EUW1));
 
-        let route_map = RouteList {
+        let routes = RouteList {
             state: ListState::default(),
             items: map,
         };
@@ -119,13 +123,13 @@ impl App {
                 content: "".to_string(),
             },
             route: PlatformRoute::KR,
-            route_map,
+            routes,
             data: Data {
                 rank: None,
                 current_search: None,
                 masteries: None,
                 summoner: None,
-                games: Games::N("NO data".to_string()),
+                games: Games::N,
             },
         }
     }
@@ -140,7 +144,8 @@ impl App {
                     self.focus = Some(*w);
                     self.msg = None
                 }
-                Msg::Search(route, name) => {
+                Msg::Search(route, n) => {
+                    let name = n.replace(" ", "");
                     let puuid: &str;
                     let res = get_summoner(*route, &name).await.unwrap_or(None);
                     match res {
@@ -190,10 +195,7 @@ impl App {
                             };
                             match entry {
                                 Some(e) => self.data.games = Games::G(GamesList::with(e)),
-                                None => {
-                                    self.data.games =
-                                        Games::N("couldn't get games data".to_string())
-                                }
+                                None => self.data.games = Games::N,
                             }
 
                             self.msg = None;
@@ -222,11 +224,11 @@ impl App {
         match self.focus.unwrap_or(Window::Header) {
             Window::List => match self.data.games {
                 Games::G(ref mut g) => g.previous(),
-                Games::N(_) => {}
+                Games::N => {}
             },
             Window::Route => {
-                self.route_map.previous();
-                self.route = self.route_map.get_item()
+                self.routes.previous();
+                self.route = self.routes.get_item(None)
             }
             _ => {}
         }
@@ -235,11 +237,11 @@ impl App {
         match self.focus.unwrap_or(Window::Header) {
             Window::List => match self.data.games {
                 Games::G(ref mut g) => g.next(),
-                Games::N(_) => {}
+                Games::N => {}
             },
             Window::Route => {
-                self.route_map.next();
-                self.route = self.route_map.get_item()
+                self.routes.next();
+                self.route = self.routes.get_item(None)
             }
             _ => {}
         }
@@ -285,17 +287,17 @@ impl GamesList {
 
     pub fn previous(&mut self) {
         if !self.items.is_empty() {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i <= 0 {
-                    self.items.len() - 1
-                } else {
-                    i - 1
+            let i = match self.state.selected() {
+                Some(i) => {
+                    if i <= 0 {
+                        self.items.len() - 1
+                    } else {
+                        i - 1
+                    }
                 }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
+                None => 0,
+            };
+            self.state.select(Some(i));
         }
     }
 
@@ -339,11 +341,11 @@ impl Input {
 #[derive(Clone)]
 pub struct RouteList {
     pub state: ListState,
-    pub items: HashMap<String, PlatformRoute>,
+    pub items: Vec<(String, PlatformRoute)>,
 }
 
 impl RouteList {
-    pub fn with(items: HashMap<String, PlatformRoute>) -> RouteList {
+    pub fn with(items: Vec<(String, PlatformRoute)>) -> RouteList {
         RouteList {
             state: ListState::default(),
             items,
@@ -385,11 +387,11 @@ impl RouteList {
     pub fn print(&mut self) -> Vec<Span> {
         let mut v: Vec<Span> = vec![];
 
-        for (i, s) in self.items.keys().into_iter().enumerate() {
+        for (i, s) in self.items.iter().enumerate() {
             if self.state.selected().unwrap_or(0) == i {
                 v.append(
                     &mut [
-                        Span::styled(s, Style::default().fg(tui::style::Color::Cyan)),
+                        Span::styled(s.clone().0, Style::default().fg(tui::style::Color::Cyan)),
                         Span::from(" | "),
                     ]
                     .to_vec(),
@@ -398,7 +400,7 @@ impl RouteList {
             }
             v.append(
                 &mut [
-                    Span::styled(s, Style::default().fg(tui::style::Color::Red)),
+                    Span::styled(s.clone().0, Style::default().fg(tui::style::Color::Red)),
                     Span::from(" | "),
                 ]
                 .to_vec(),
@@ -407,16 +409,24 @@ impl RouteList {
         v
     }
 
-    pub fn get_item(&mut self) -> PlatformRoute {
-        for (i, s) in self.items.keys().into_iter().enumerate() {
-            if self.state.selected().unwrap_or(0) == i {
-                let (_, route) = self
-                    .items
-                    .get_key_value(s)
-                    .unwrap_or((&"kr".to_string(), &PlatformRoute::KR));
-                return *route;
+    pub fn get_item(&mut self, key: Option<String>) -> PlatformRoute {
+        match key {
+            Some(key) => self
+                .items
+                .iter()
+                .filter(|f| key == f.0)
+                .map(|f| f.1)
+                .collect::<Vec<PlatformRoute>>()
+                .pop()
+                .unwrap_or(PlatformRoute::KR),
+            None => {
+                let idx = self.state.selected().unwrap_or(0);
+
+                if idx >= self.items.len() {
+                    return PlatformRoute::KR;
+                }
+                self.items[idx].1
             }
         }
-        PlatformRoute::KR
     }
 }
