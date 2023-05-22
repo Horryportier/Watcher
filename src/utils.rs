@@ -22,4 +22,6 @@ NONE            lunches Tui
 -m | --mastery  get's first 10 highest champions mastery's
 -g | --game     -g 0..20 get's game from 20 games
         "###;
+
+    println!("{}", TEXT);
 }

@@ -27,6 +27,13 @@ async fn main() -> Result<(), ()> {
     let get_rank_err: String = err_print!("couldn't get rank");
     let get_masteries_err: String = err_print!("couldn't get masteries");
     let get_games_err: String = err_print!("couldn't get games");
+    
+    if args.len() == 2 {
+        if args[1] == "-h" || args[1] == "--help" {
+            print_help();
+            return Ok(());
+        }
+    }
 
     let name: &str = &args[1].clone();
     args.remove(1);
