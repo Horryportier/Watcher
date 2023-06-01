@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main",  "switch-to-ratatui"]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "switch-to-ratatui"]
 
 env:
   CARGO_TERM_COLOR: always
