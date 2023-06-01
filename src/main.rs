@@ -19,7 +19,10 @@ async fn main() -> Result<(), ()> {
     let mut args: Vec<String> = args().collect();
 
     if args.len() == 1 {
-        let _ = ui().await;
+        if let Err(err) = ui().await {
+            println!("ERR: {}", err)
+        }
+        return Ok(());
     };
 
     let get_summoner_err: String = err_print!("couldn't get_summoner");
@@ -27,7 +30,7 @@ async fn main() -> Result<(), ()> {
     let get_rank_err: String = err_print!("couldn't get rank");
     let get_masteries_err: String = err_print!("couldn't get masteries");
     let get_games_err: String = err_print!("couldn't get games");
-    
+
     if args.len() == 2 {
         if args[1] == "-h" || args[1] == "--help" {
             print_help();
