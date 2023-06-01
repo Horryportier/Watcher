@@ -18,8 +18,17 @@ const ROUTE: PlatformRoute = PlatformRoute::EUN1;
 async fn main() -> Result<(), ()> {
     let mut args: Vec<String> = args().collect();
 
+    let mut api_key = "";
+    match option_env!("RGAPI_KEY") {
+        None => {
+            println!("RGAPI_KEY is empty check if its exported");
+            return Ok(());
+        }
+        Some(key) => api_key = key,
+    }
+
     if args.len() == 1 {
-        if let Err(err) = ui().await {
+        if let Err(err) = ui(api_key).await {
             println!("ERR: {}", err)
         }
         return Ok(());
@@ -47,19 +56,19 @@ async fn main() -> Result<(), ()> {
         match arg.as_str() {
             "--help" | "-h" => print_help(),
             "--sum" | "-s" => {
-                let sum = get_summoner(ROUTE, name)
+                let sum = get_summoner(api_key, ROUTE, name)
                     .await
                     .expect(&get_summoner_err)
                     .expect(&summoner_is_none);
                 println!("{}", SummonerDisplay::with(sum));
             }
             "--rank" | "-r" => {
-                let id = get_summoner(ROUTE, name)
+                let id = get_summoner(api_key, ROUTE, name)
                     .await
                     .expect(&get_summoner_err)
                     .expect(&summoner_is_none)
                     .id;
-                let res = get_rank(ROUTE, id.as_str())
+                let res = get_rank(api_key, ROUTE, id.as_str())
                     .await
                     .expect(get_rank_err.as_str());
                 let ranks: Vec<LeagueEntryDisplay> = res
@@ -71,12 +80,12 @@ async fn main() -> Result<(), ()> {
                 }
             }
             "--mastery" | "-m" => {
-                let id = get_summoner(ROUTE, name)
+                let id = get_summoner(api_key, ROUTE, name)
                     .await
                     .expect(&get_summoner_err)
                     .expect(&summoner_is_none)
                     .id;
-                let masteries: Vec<ChampionMasteryDisplay> = get_masteries(ROUTE, &id, 10)
+                let masteries: Vec<ChampionMasteryDisplay> = get_masteries(api_key, ROUTE, &id, 10)
                     .await
                     .expect(get_masteries_err.as_str())
                     .iter()
@@ -87,12 +96,12 @@ async fn main() -> Result<(), ()> {
                 }
             }
             "--game" | "-g" => {
-                let id = get_summoner(ROUTE, name)
+                let id = get_summoner(api_key, ROUTE, name)
                     .await
                     .expect(&get_summoner_err)
                     .expect(&summoner_is_none)
                     .puuid;
-                let matches = get_games(ROUTE, &id).await.expect(&get_games_err);
+                let matches = get_games(api_key, ROUTE, &id).await.expect(&get_games_err);
                 let m = MatchDisplay::with(
                     matches
                         .get(args[i + 1].parse().unwrap_or(0))

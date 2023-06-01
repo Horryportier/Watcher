@@ -31,7 +31,7 @@ use super::{
     keys::handle_keys,
 };
 
-pub async fn ui() -> Result<(), io::Error> {
+pub async fn ui(api_key: &str) -> Result<(), io::Error> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
@@ -41,6 +41,7 @@ pub async fn ui() -> Result<(), io::Error> {
     let tick_rate = Duration::from_millis(250);
     let last_tick = Instant::now();
     let mut app = App::default();
+    app.key = api_key.to_string();
 
     loop {
         let mut msg: Option<Msg> = None;

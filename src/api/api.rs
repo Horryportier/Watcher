@@ -7,20 +7,23 @@ use riven::models::match_v5::Match;
 use riven::models::summoner_v4::Summoner;
 use riven::{RiotApi, RiotApiError};
 
-const API_KEY: &'static str = std::env!("RGAPI_KEY");
-
-pub async fn get_rank(route: PlatformRoute, id: &str) -> Result<Vec<LeagueEntry>, RiotApiError> {
-    RiotApi::new(API_KEY)
+pub async fn get_rank(
+    api_key: &str,
+    route: PlatformRoute,
+    id: &str,
+) -> Result<Vec<LeagueEntry>, RiotApiError> {
+    RiotApi::new(api_key)
         .league_v4()
         .get_league_entries_for_summoner(route, id)
         .await
 }
 
 pub async fn get_summoner(
+    api_key: &str,
     route: PlatformRoute,
     name: &str,
 ) -> Result<Option<Summoner>, RiotApiError> {
-    let res = RiotApi::new(API_KEY)
+    let res = RiotApi::new(api_key)
         .summoner_v4()
         .get_by_summoner_name(route, name)
         .await;
@@ -34,11 +37,12 @@ pub async fn get_summoner(
 }
 
 pub async fn get_masteries(
+    api_key: &str,
     route: PlatformRoute,
     id: &str,
     top: usize,
 ) -> Result<Vec<ChampionMastery>, RiotApiError> {
-    let res = RiotApi::new(API_KEY)
+    let res = RiotApi::new(api_key)
         .champion_mastery_v4()
         .get_top_champion_masteries(route, id, Some(top as i32))
         .await;
@@ -50,7 +54,11 @@ pub async fn get_masteries(
     }
 }
 
-pub async fn get_games(route: PlatformRoute, puuid: &str) -> Result<Vec<Match>, RiotApiError> {
+pub async fn get_games(
+    api_key: &str,
+    route: PlatformRoute,
+    puuid: &str,
+) -> Result<Vec<Match>, RiotApiError> {
     let mut remap = HashMap::<Vec<PlatformRoute>, RegionalRoute>::new();
     remap.insert(
         [PlatformRoute::NA1, PlatformRoute::BR1].to_vec(),
@@ -64,7 +72,7 @@ pub async fn get_games(route: PlatformRoute, puuid: &str) -> Result<Vec<Match>, 
         [PlatformRoute::KR, PlatformRoute::JP1, PlatformRoute::TW2].to_vec(),
         RegionalRoute::ASIA,
     );
-    let riot = RiotApi::new(API_KEY);
+    let riot = RiotApi::new(api_key);
 
     let res = riot
         .match_v5()

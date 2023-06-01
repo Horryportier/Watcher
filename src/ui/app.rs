@@ -65,6 +65,7 @@ impl Window {
 
 #[derive(Clone)]
 pub struct App {
+    pub key: String,
     pub state: State,
     pub msg: Option<Msg>,
     pub focus: Option<Window>,
@@ -116,6 +117,7 @@ impl App {
             items: map,
         };
         App {
+            key: "".to_string(),
             state: State::Idle,
             msg: None,
             focus: Some(Window::List),
@@ -183,7 +185,7 @@ impl App {
     async fn search_all(&mut self, route: &PlatformRoute, name: &str) {
         let name = name.replace(" ", "");
         let puuid: &str;
-        let res = get_summoner(*route, &name).await.unwrap_or(None);
+        let res = get_summoner(&self.key,*route, &name).await.unwrap_or(None);
         match res {
             None => self.state = State::Failed(name.to_string(), *route),
 
@@ -193,7 +195,7 @@ impl App {
                 self.data.summoner = Some(SummonerDisplay::with(sumoner.clone()));
                 self.data.current_search = Some((sumoner.id, sumoner.name));
 
-                let res = get_rank(*route, &self.data.current_search.as_ref().unwrap().0).await;
+                let res = get_rank(&self.key,*route, &self.data.current_search.as_ref().unwrap().0).await;
                 let entry: Option<Vec<LeagueEntryDisplay>> = match res {
                     Err(_) => None,
                     Ok(rank) => Some(
@@ -205,7 +207,7 @@ impl App {
                 self.data.rank = entry;
 
                 let res =
-                    get_masteries(*route, &self.data.current_search.as_ref().unwrap().0, 10).await;
+                    get_masteries(&self.key, *route, &self.data.current_search.as_ref().unwrap().0, 10).await;
                 let entry: Option<Vec<ChampionMasteryDisplay>> = match res {
                     Err(_) => None,
                     Ok(m) => Some(
@@ -216,7 +218,7 @@ impl App {
                 };
                 self.data.masteries = entry;
 
-                let res = get_games(*route, puuid).await;
+                let res = get_games(&self.key, *route, puuid).await;
                 let entry: Option<Vec<MatchDisplay>> = match res {
                     Err(_) => None,
                     Ok(rank) => Some(rank.iter().map(|f| MatchDisplay::with(f.clone())).collect()),
