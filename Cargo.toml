@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 crossterm = "0.26.1"
-#ratatui = "0.21.0"
-ratatui = { git = "https://github.com/tui-rs-revival/ratatui.git" }
+ratatui = "0.21.0"
+#ratatui = { git = "https://github.com/tui-rs-revival/ratatui.git" }
 riven = "2.19.0"
 tokio = { version = "1.27.0", features =   ["full", "macros"] }
