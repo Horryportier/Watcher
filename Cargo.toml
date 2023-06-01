@@ -6,8 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ansi-to-tui = { git = "https://github.com/uttarayan21/ansi-to-tui"} 
+ansi-to-tui = "3.0.0"
 crossterm = "0.26.1"
+#ratatui = "0.20.0"
 ratatui = { git = "https://github.com/tui-rs-revival/ratatui.git" }
 riven = "2.19.0"
 tokio = { version = "1.27.0", features =   ["full", "macros"] }
