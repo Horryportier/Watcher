@@ -12,17 +12,17 @@ use crossterm::{
 };
 use riven::models::match_v5::Participant;
 
-use tui::{
+use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    text::{Span, Spans},
+    text::{Line, Span, Text},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     Frame, Terminal,
 };
 
 use crate::{
-    display::{border_color, MatchDisplay, VecSpans},
+    display::{border_color, MatchDisplay, VecLine },
     no_data,
 };
 
@@ -31,7 +31,7 @@ use super::{
     keys::handle_keys,
 };
 
-pub async fn ui() -> Result<(), io::Error> {
+pub async fn ui(api_key: &str) -> Result<(), io::Error> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
@@ -41,6 +41,7 @@ pub async fn ui() -> Result<(), io::Error> {
     let tick_rate = Duration::from_millis(250);
     let last_tick = Instant::now();
     let mut app = App::default();
+    app.key = api_key.to_string();
 
     loop {
         let mut msg: Option<Msg> = None;
@@ -138,7 +139,7 @@ fn draw_header<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
         );
         f.render_widget(paragraph, chunks[0]);
 
-        let routes = Spans::from(app.routes.print());
+        let routes = Line::from(app.routes.print());
         let paragraph = Paragraph::new(routes).block(
             Block::default()
                 .borders(Borders::ALL)
@@ -212,7 +213,7 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 
     let mut items: Vec<ListItem> = vec![];
     let mut state = ListState::default();
-    let mut curr_game: Vec<Spans> = no_data!();
+    let mut curr_game: Vec<Line> = no_data!();
     let selected: MatchDisplay;
 
     match app.data.games.clone() {
@@ -231,9 +232,10 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 
                 if id.len() != 0 {
                     if id.pop().unwrap().win {
-                        text = Span::styled("win", Style::default().fg(tui::style::Color::Green))
+                        text =
+                            Span::styled("win", Style::default().fg(ratatui::style::Color::Green))
                     } else {
-                        text = Span::styled("lose", Style::default().fg(tui::style::Color::Red))
+                        text = Span::styled("lose", Style::default().fg(ratatui::style::Color::Red))
                     }
                 }
 
@@ -249,10 +251,10 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 
     let list = List::new(items)
         .block(Block::default().borders(Borders::ALL))
-        .style(Style::default().fg(tui::style::Color::Gray))
+        .style(Style::default().fg(ratatui::style::Color::Gray))
         .highlight_style(
             Style::default()
-                .fg(tui::style::Color::LightCyan)
+                .fg(ratatui::style::Color::LightCyan)
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol("=>");

@@ -1,5 +1,5 @@
+use ratatui::{style::Style, text::Span, widgets::ListState};
 use riven::consts::PlatformRoute;
-use tui::{style::Style, text::Span, widgets::ListState};
 
 use crate::{
     api::api::{get_games, get_masteries, get_rank, get_summoner},
@@ -53,10 +53,10 @@ impl Window {
         ];
         for (i, w) in windows.iter().enumerate() {
             if self == w {
-                if i+1 >= windows.len() {
-                    return  windows[0];
+                if i + 1 >= windows.len() {
+                    return windows[0];
                 }
-                return  windows[i+1]
+                return windows[i + 1];
             }
         }
         Window::Header
@@ -65,6 +65,7 @@ impl Window {
 
 #[derive(Clone)]
 pub struct App {
+    pub key: String,
     pub state: State,
     pub msg: Option<Msg>,
     pub focus: Option<Window>,
@@ -116,6 +117,7 @@ impl App {
             items: map,
         };
         App {
+            key: "".to_string(),
             state: State::Idle,
             msg: None,
             focus: Some(Window::List),
@@ -135,85 +137,18 @@ impl App {
     }
 
     pub async fn msg(&mut self) {
-        let msg = &self.msg;
+        let msg = self.msg.clone();
 
         match msg {
             Some(msg) => match msg {
                 Msg::Quit => {}
                 Msg::Focus(w) => {
-                    self.focus = Some(*w);
+                    self.focus = Some(w);
                     self.msg = None
                 }
-                Msg::Search(route, n) => {
-                    let name = n.replace(" ", "");
-                    let puuid: &str;
-                    let res = get_summoner(*route, &name).await.unwrap_or(None);
-                    match res {
-                        None => self.state = State::Failed(name.to_string(), *route),
-
-                        Some(sumoner) => {
-                            self.state = State::Searching(name.to_string(), *route);
-                            puuid = &sumoner.puuid;
-                            self.data.summoner = Some(SummonerDisplay::with(sumoner.clone()));
-                            self.data.current_search = Some((sumoner.id, sumoner.name));
-
-                            let res =
-                                get_rank(*route, &self.data.current_search.as_ref().unwrap().0)
-                                    .await;
-                            let entry: Option<Vec<LeagueEntryDisplay>> = match res {
-                                Err(_) => None,
-                                Ok(rank) => Some(
-                                    rank.iter()
-                                        .map(|f| LeagueEntryDisplay::with(f.clone()))
-                                        .collect(),
-                                ),
-                            };
-                            self.data.rank = entry;
-
-                            let res = get_masteries(
-                                *route,
-                                &self.data.current_search.as_ref().unwrap().0,
-                                10,
-                            )
-                            .await;
-                            let entry: Option<Vec<ChampionMasteryDisplay>> = match res {
-                                Err(_) => None,
-                                Ok(m) => Some(
-                                    m.iter()
-                                        .map(|f| ChampionMasteryDisplay::with(f.clone()))
-                                        .collect(),
-                                ),
-                            };
-                            self.data.masteries = entry;
-
-                            let res = get_games(*route, puuid).await;
-                            let entry: Option<Vec<MatchDisplay>> = match res {
-                                Err(_) => None,
-                                Ok(rank) => Some(
-                                    rank.iter().map(|f| MatchDisplay::with(f.clone())).collect(),
-                                ),
-                            };
-                            match entry {
-                                Some(e) => self.data.games = Games::G(GamesList::with(e)),
-                                None => self.data.games = Games::N,
-                            }
-
-                            self.msg = None;
-
-                            self.focus = Some(Window::List);
-                            self.state = State::Idle
-                        }
-                    }
+                Msg::Search(route, name) => {
+                    self.search_all(&route, &name).await;
                 }
-                //Msg::Input(w) => {
-                //    self.focus = Some(*w);
-                //    match self.focus.unwrap_or(Window::Header) {
-                //        Window::Input => {
-                //            self.input.state = true;
-                //        }
-                //        _ => {}
-                //    }
-                //}
                 _ => {}
             },
             None => {}
@@ -244,6 +179,60 @@ impl App {
                 self.route = self.routes.get_item(None)
             }
             _ => {}
+        }
+    }
+
+    async fn search_all(&mut self, route: &PlatformRoute, name: &str) {
+        let name = name.replace(" ", "");
+        let puuid: &str;
+        let res = get_summoner(&self.key,*route, &name).await.unwrap_or(None);
+        match res {
+            None => self.state = State::Failed(name.to_string(), *route),
+
+            Some(sumoner) => {
+                self.state = State::Searching(name.to_string(), *route);
+                puuid = &sumoner.puuid;
+                self.data.summoner = Some(SummonerDisplay::with(sumoner.clone()));
+                self.data.current_search = Some((sumoner.id, sumoner.name));
+
+                let res = get_rank(&self.key,*route, &self.data.current_search.as_ref().unwrap().0).await;
+                let entry: Option<Vec<LeagueEntryDisplay>> = match res {
+                    Err(_) => None,
+                    Ok(rank) => Some(
+                        rank.iter()
+                            .map(|f| LeagueEntryDisplay::with(f.clone()))
+                            .collect(),
+                    ),
+                };
+                self.data.rank = entry;
+
+                let res =
+                    get_masteries(&self.key, *route, &self.data.current_search.as_ref().unwrap().0, 10).await;
+                let entry: Option<Vec<ChampionMasteryDisplay>> = match res {
+                    Err(_) => None,
+                    Ok(m) => Some(
+                        m.iter()
+                            .map(|f| ChampionMasteryDisplay::with(f.clone()))
+                            .collect(),
+                    ),
+                };
+                self.data.masteries = entry;
+
+                let res = get_games(&self.key, *route, puuid).await;
+                let entry: Option<Vec<MatchDisplay>> = match res {
+                    Err(_) => None,
+                    Ok(rank) => Some(rank.iter().map(|f| MatchDisplay::with(f.clone())).collect()),
+                };
+                match entry {
+                    Some(e) => self.data.games = Games::G(GamesList::with(e)),
+                    None => self.data.games = Games::N,
+                }
+
+                self.msg = None;
+
+                self.focus = Some(Window::List);
+                self.state = State::Idle
+            }
         }
     }
 }
@@ -391,7 +380,10 @@ impl RouteList {
             if self.state.selected().unwrap_or(0) == i {
                 v.append(
                     &mut [
-                        Span::styled(s.clone().0, Style::default().fg(tui::style::Color::Cyan)),
+                        Span::styled(
+                            s.clone().0,
+                            Style::default().fg(ratatui::style::Color::Cyan),
+                        ),
                         Span::from(" | "),
                     ]
                     .to_vec(),
@@ -400,7 +392,7 @@ impl RouteList {
             }
             v.append(
                 &mut [
-                    Span::styled(s.clone().0, Style::default().fg(tui::style::Color::Red)),
+                    Span::styled(s.clone().0, Style::default().fg(ratatui::style::Color::Red)),
                     Span::from(" | "),
                 ]
                 .to_vec(),

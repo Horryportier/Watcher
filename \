@@ -1,6 +1,7 @@
 use core::fmt;
 use std::{fmt::Display, fs};
 
+use ansi_to_tui::IntoText;
 use crossterm::style::{Color, Stylize};
 use ratatui::{
     style::{self, Modifier, Style},
@@ -23,25 +24,19 @@ macro_rules! no_data {
     };
 }
 
-//pub trait VecLineTest<T: Display>
-//where
-//    Self: std::fmt::Display,
-//{
-//    fn spans(&self) -> Text {
-//        let a = format!("{}", self);
-//        let test = format!(
-//            "{}",
-//            "[38;5;12m[1m[4mHide on bush[0m  [39mlvl[39m:[38;5;14m663[39m"
-//        );
-//        if let Ok(text) = a.into_text() {
-//            return text;
-//        }
-//        if let Err(err) = a.into_text() {
-//            return Text::from(err);
-//        }
-//    }
-//}
-//
+pub trait VecLineTest<T: Display>
+where
+    Self: std::fmt::Display,
+{
+    fn spans(&self) -> Text {
+        let a = format!("{}", self);
+        if let Ok(text) = a.into_text() {
+            return text;
+        }
+        Text::from(no_data!())
+    }
+}
+
 pub trait VecLine {
     fn spans(&self) -> Vec<Line>;
 }
@@ -82,41 +77,38 @@ impl With for SummonerDisplay {
         SummonerDisplay(entry)
     }
 }
-impl VecLine for SummonerDisplay {
-//impl SummonerDisplay {
-    //pub fn spans(&self) -> Text {
-    //    let a = format!("{}", self.to_string());
-    //    let test = format!(
-    //        "{}",
-    //        "[38;5;12m[1m[4mHide on bush[0m  [39mlvl[39m:[38;5;14m663[39m"
-    //    );
-    //    if let Ok(text) = a.as_str().into_text() {
-    //        return text;
-    //    }
-    //    Text::from(no_data!())
-    //}
-//}
- fn spans(&self) -> Vec<Line> {
-     let entry = &self.0;
-     vec![Line::from(vec![
-         Span::from("  "),
-         Span::styled(
-             entry.name.clone(),
-             Style::default()
-                 .fg(style::Color::Green)
-                 .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
-         ),
-         Span::from("    "),
-         Span::styled("lvl", Style::default().fg(style::Color::Reset)),
-         Span::from(":"),
-         Span::styled(
-             entry.summoner_level.to_string(),
-             Style::default().fg(style::Color::Yellow),
-         ),
-         Span::from("\n"),
-     ])]
- }
+//impl VecLineTest<SummonerDisplay> for SummonerDisplay {
+impl SummonerDisplay {
+    pub fn spans(&self) -> Text {
+        let a = format!("{}", self);
+        let test = format!("{}", "[38;5;12m[1m[4mHide on bush[0m  [39mlvl[39m:[38;5;14m663[39m");
+        if let Ok(text) = test.as_str().into_text() {
+            return text;
+        }
+        Text::from(no_data!())
+    }
 }
+// fn spans(&self) -> Vec<Line> {
+//     let entry = &self.0;
+//     vec![Line::from(vec![
+//         Span::from("  "),
+//         Span::styled(
+//             entry.name.clone(),
+//             Style::default()
+//                 .fg(style::Color::Green)
+//                 .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
+//         ),
+//         Span::from("    "),
+//         Span::styled("lvl", Style::default().fg(style::Color::Reset)),
+//         Span::from(":"),
+//         Span::styled(
+//             entry.summoner_level.to_string(),
+//             Style::default().fg(style::Color::Yellow),
+//         ),
+//         Span::from("\n"),
+//     ])]
+// }
+//}
 
 #[derive(Clone)]
 pub struct LeagueEntryDisplay(pub LeagueEntry);
