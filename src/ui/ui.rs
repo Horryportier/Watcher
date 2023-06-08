@@ -5,6 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use ansi_to_tui::IntoText;
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
@@ -17,12 +18,12 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
     Frame, Terminal,
 };
 
 use crate::{
-    display::{border_color, MatchDisplay, VecLine },
+    display::{border_color, concat_text, DisplayToText, MatchDisplay},
     no_data,
 };
 
@@ -72,15 +73,9 @@ pub async fn ui(api_key: &str) -> Result<(), io::Error> {
                 _ => {}
             },
             Err(_) => {}
-        }
-        //let name: Option<&str> = std::option_env!("WATCHER_NAME");
-        //let region: Option<&str> = std::option_env!("WATCHER_REGION");
-        //if let Some(name) = name {
-        //    if let Some(region) = region {
-        //        app.routes.get_item(Some(region.to_string()));
-        //        msg = Some(Msg::Search(PlatformRoute::KR, name.to_string()));
-        //    }
-        //}
+      }
+      let _=  app.get_env_search();
+       
 
         app.msg = msg;
         app.msg().await;
@@ -115,7 +110,7 @@ fn draw_header<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
         .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
         .split(area);
     let text = match &app.data.summoner {
-        Some(e) => e.spans(),
+        Some(e) => e.clone().into_text(),
         None => no_data!(),
     };
 
@@ -166,15 +161,11 @@ fn draw_conntent<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 }
 
 fn draw_rank<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let text = match &app.data.rank {
-        Some(e) => {
-            let a = e.iter().map(|f| f.spans()).collect::<Vec<_>>().concat();
-            a
-        }
-        None => no_data!(),
+    let texts: Vec<Text> = match &app.data.rank {
+        Some(e) => e.iter().map(|f| f.into_text()).collect::<Vec<Text>>(),
+        None => vec![no_data!()],
     };
-
-    let paragraph = Paragraph::new(text).block(
+    let paragraph = Paragraph::new(concat_text(texts)).block(
         Block::default()
             .borders(Borders::ALL)
             .style(border_color(super::app::Window::Rank, app.focus)),
@@ -183,15 +174,11 @@ fn draw_rank<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 }
 
 fn draw_masteries<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let text = match &app.data.masteries {
-        Some(e) => {
-            let a = e.iter().map(|f| f.spans()).collect::<Vec<_>>().concat();
-            a
-        }
-        None => no_data!(),
+    let texts = match &app.data.masteries {
+        Some(e) => e.iter().map(|f| f.into_text()).collect::<Vec<_>>(),
+        None => vec![no_data!()],
     };
-
-    let paragraph = Paragraph::new(text).block(
+    let paragraph = Paragraph::new(concat_text(texts)).block(
         Block::default()
             .borders(Borders::ALL)
             .style(border_color(super::app::Window::Masteries, app.focus)),
@@ -213,7 +200,7 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 
     let mut items: Vec<ListItem> = vec![];
     let mut state = ListState::default();
-    let mut curr_game: Vec<Line> = no_data!();
+    let mut curr_game: Text = Text::from("");
     let selected: MatchDisplay;
 
     match app.data.games.clone() {
@@ -243,10 +230,10 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
             }
             if g.items.len() != 0 {
                 selected = g.items.index(state.selected().unwrap_or(0)).clone();
-                curr_game = selected.spans();
+                curr_game = selected.into_text();
             }
         }
-        Games::N => items.append(&mut vec![ListItem::new(no_data!())]),
+        Games::N => items.append(&mut vec![ListItem::new(Text::from("no data"))]),
     };
 
     let list = List::new(items)
@@ -269,10 +256,16 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 }
 
 fn draw_footer<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let paragraph = Paragraph::new(format!("{:?}", app.route)).block(
+    //let text = format!(
+    //    "search {:?}:{:?}, env_search {:?} | State {:?} ",
+    //    app.data.current_search, app.route, app.data.env_search, app.state
+    //);
+    let text = format!("{}", app.keys);
+    
+    let paragraph = Paragraph::new(text.into_text().unwrap_or(no_data!())).block(
         Block::default()
             .borders(Borders::ALL)
             .style(border_color(super::app::Window::Footer, app.focus)),
-    );
+    ).wrap(Wrap { trim: true });
     f.render_widget(paragraph, area);
 }

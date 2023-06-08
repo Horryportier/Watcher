@@ -1,8 +1,57 @@
-use std::{io, time::Duration};
+use std::{fmt::Display, io, time::Duration};
 
-use crossterm::event::{self, Event, KeyCode};
+use crossterm::{
+    event::{self, Event, KeyCode},
+    style::Stylize,
+};
 
 use super::app::{App, Msg, Window};
+
+#[derive(Clone)]
+pub struct Keys {
+    pub keys: Vec<(Vec<KeyCode>, String)>,
+}
+
+impl Keys {
+    pub fn with(keys: Vec<(Vec<KeyCode>, String)>) -> Keys {
+        Keys { keys }
+    }
+}
+
+impl Default for Keys {
+    fn default() -> Self {
+        let keys: Vec<(Vec<KeyCode>, String)> = vec![
+            (vec![KeyCode::Char('q'), KeyCode::Esc], "Quit".into()),
+            (vec![KeyCode::Char('i')], "focus input".into()),
+            (vec![KeyCode::Tab], "switch window".into()),
+            (vec![KeyCode::Down, KeyCode::Char('j')], "down".into()),
+            (vec![KeyCode::Up, KeyCode::Char('j')], "up".into()),
+            (vec![KeyCode::Enter], "search".into()),
+            (vec![KeyCode::Insert], "clipboard".into()),
+            (vec![KeyCode::Delete], "clear input".into()),
+            (vec![KeyCode::Char('f')], "search with ENV vars".into()),
+        ];
+        Keys { keys }
+    }
+}
+
+impl Display for Keys {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let text = self.keys.iter().map(|f| {
+            let k =
+                f.0.iter()
+                    .map(|f| format!("{:?}", {
+                        match  f {
+                            KeyCode::Char(c) => format!("{c}"),
+                            _ => format!("{:?}", f)
+                        }}).with(crossterm::style::Color::Green).to_string())
+                    .collect::<Vec<String>>()
+                    .join(&"/".with(crossterm::style::Color::Reset).to_string());
+           format!("{} -> {}", k, f.1.clone().with(crossterm::style::Color::Yellow).to_string()) 
+        }).collect::<Vec<String>>().join(" | ");
+        write!(f, "{}", text)
+    }
+}
 
 pub async fn handle_keys(timeout: Duration, app: &mut App) -> io::Result<Option<Msg>> {
     if crossterm::event::poll(timeout)? {
@@ -11,11 +60,18 @@ pub async fn handle_keys(timeout: Duration, app: &mut App) -> io::Result<Option<
                 match key.code {
                     KeyCode::Char('q') => return Ok(Some(Msg::Quit)),
                     KeyCode::Esc => return Ok(Some(Msg::Quit)),
+                    KeyCode::Enter => return Ok(Some(app.enter())),
                     KeyCode::Char('f') => {
-                        return Ok(Some(Msg::Search(
-                            riven::consts::PlatformRoute::EUN1,
-                            "NOTJOHNYS".to_string(),
-                        )))
+                        let msg = match app.data.clone().env_search {
+                            None => match app.get_env_search() {
+                                Ok(..) => None,
+                                Err(..) => None,
+                            },
+                            Some(search) => {
+                                Some(Msg::Search(app.clone().into_route(search.1), search.0))
+                            }
+                        };
+                        return Ok(msg);
                     }
                     KeyCode::Tab => {
                         app.focus = Some(app.focus.unwrap_or(super::app::Window::Header).next())
@@ -40,11 +96,15 @@ pub async fn handle_keys(timeout: Duration, app: &mut App) -> io::Result<Option<
                     }
                     KeyCode::Enter => {
                         let tmp = app.clone().input.get();
-                        app.input.clear();
                         return Ok(Some(Msg::Search(app.route, tmp)));
                     }
                     KeyCode::Char(c) => app.input.append(c.to_string()),
                     KeyCode::Backspace => app.input.delete(),
+                    KeyCode::Insert => {
+                        let clip = cli_clipboard::get_contents().unwrap_or("".to_string());
+                        app.input.set(clip)
+                    }
+                    KeyCode::Delete => app.input.clear(),
                     _ => {}
                 }
             }

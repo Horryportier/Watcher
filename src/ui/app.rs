@@ -1,3 +1,5 @@
+use std::fmt::Error;
+
 use ratatui::{style::Style, text::Span, widgets::ListState};
 use riven::consts::PlatformRoute;
 
@@ -5,6 +7,8 @@ use crate::{
     api::api::{get_games, get_masteries, get_rank, get_summoner},
     display::{ChampionMasteryDisplay, LeagueEntryDisplay, MatchDisplay, SummonerDisplay, With},
 };
+
+use super::keys::Keys;
 
 #[derive(Debug, Clone)]
 pub enum State {
@@ -25,6 +29,7 @@ pub enum Msg {
     Quit,
     Focus(Window),
     Search(PlatformRoute, String),
+    None,
 }
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
@@ -73,12 +78,14 @@ pub struct App {
     pub input: Input,
     pub route: PlatformRoute,
     pub routes: RouteList,
+    pub keys: Keys,
 }
 
 #[derive(Clone)]
 pub struct Data {
     pub rank: Option<Vec<LeagueEntryDisplay>>,
     pub current_search: Option<(String, String)>, // (id,name)
+    pub env_search: Option<(String, String)>,
     pub masteries: Option<Vec<ChampionMasteryDisplay>>,
     pub summoner: Option<SummonerDisplay>,
     pub games: Games,
@@ -116,8 +123,12 @@ impl App {
             state: ListState::default(),
             items: map,
         };
+
+        let keys = Keys::default();
+
         App {
-            key: "".to_string(),
+            keys,
+            key: "".to_string(),// api key
             state: State::Idle,
             msg: None,
             focus: Some(Window::List),
@@ -129,6 +140,7 @@ impl App {
             data: Data {
                 rank: None,
                 current_search: None,
+                env_search: None,
                 masteries: None,
                 summoner: None,
                 games: Games::N,
@@ -147,12 +159,26 @@ impl App {
                     self.msg = None
                 }
                 Msg::Search(route, name) => {
+                    self.input.clear();
                     self.search_all(&route, &name).await;
                 }
                 _ => {}
             },
             None => {}
         }
+    }
+
+    pub fn get_env_search(&mut self) -> Result<(), Error> {
+        let name: Option<&str> = std::option_env!("WATCHER_NAME");
+        let region: Option<&str> = std::option_env!("WATCHER_REGION");
+        if let Some(name) = name {
+            if let Some(region) = region {
+                self.data.current_search = Some((name.into(), region.into()));
+                return Ok(());
+            }
+            return Err(Error::default());
+        }
+        Err(Error::default())
     }
 
     pub fn up(&mut self) {
@@ -182,10 +208,21 @@ impl App {
         }
     }
 
+    pub fn enter(&mut self) -> Msg {
+        match self.focus.unwrap_or(Window::Header) {
+            Window::Route => Msg::Search(self.route, self.input.clone().get()),
+            _ => Msg::None,
+        }
+    }
+
+    pub fn into_route(mut self, text: String) -> PlatformRoute {
+        self.routes.get_item(Some(text))
+    }
+
     async fn search_all(&mut self, route: &PlatformRoute, name: &str) {
         let name = name.replace(" ", "");
         let puuid: &str;
-        let res = get_summoner(&self.key,*route, &name).await.unwrap_or(None);
+        let res = get_summoner(&self.key, *route, &name).await.unwrap_or(None);
         match res {
             None => self.state = State::Failed(name.to_string(), *route),
 
@@ -195,7 +232,12 @@ impl App {
                 self.data.summoner = Some(SummonerDisplay::with(sumoner.clone()));
                 self.data.current_search = Some((sumoner.id, sumoner.name));
 
-                let res = get_rank(&self.key,*route, &self.data.current_search.as_ref().unwrap().0).await;
+                let res = get_rank(
+                    &self.key,
+                    *route,
+                    &self.data.current_search.as_ref().unwrap().0,
+                )
+                .await;
                 let entry: Option<Vec<LeagueEntryDisplay>> = match res {
                     Err(_) => None,
                     Ok(rank) => Some(
@@ -206,8 +248,13 @@ impl App {
                 };
                 self.data.rank = entry;
 
-                let res =
-                    get_masteries(&self.key, *route, &self.data.current_search.as_ref().unwrap().0, 10).await;
+                let res = get_masteries(
+                    &self.key,
+                    *route,
+                    &self.data.current_search.as_ref().unwrap().0,
+                    10,
+                )
+                .await;
                 let entry: Option<Vec<ChampionMasteryDisplay>> = match res {
                     Err(_) => None,
                     Ok(m) => Some(
@@ -314,6 +361,9 @@ impl Input {
 
     pub fn append(&mut self, rhs: String) {
         self.content = format!("{}{}", self.content, rhs)
+    }
+    pub fn set(&mut self, text: String) {
+        self.content = text
     }
 
     pub fn clear(&mut self) {
