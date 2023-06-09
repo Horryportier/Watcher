@@ -5,7 +5,7 @@
 
 Watcher is an basic CLI/TUI tool that retrieves summoner data from Riot API.
 
-<img src="http://www.google.com.au/images/nav_logo7.png">
+<img src="https://raw.githubusercontent.com/Horryportier/Watcher/main/tui.png">
 
 ## Installation 
 
