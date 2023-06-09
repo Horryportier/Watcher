@@ -16,7 +16,7 @@ use riven::models::match_v5::Participant;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     text::{Line, Span, Text},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
     Frame, Terminal,
@@ -73,9 +73,8 @@ pub async fn ui(api_key: &str) -> Result<(), io::Error> {
                 _ => {}
             },
             Err(_) => {}
-      }
-      let _=  app.get_env_search();
-       
+        }
+        let _ = app.get_env_search();
 
         app.msg = msg;
         app.msg().await;
@@ -114,11 +113,12 @@ fn draw_header<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
         None => no_data!(),
     };
 
-    let paragraph = Paragraph::new(text).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .style(border_color(super::app::Window::Header, app.focus)),
-    );
+    let paragraph =
+        Paragraph::new(text).block(Block::default().borders(Borders::ALL).style(border_color(
+            super::app::Window::Header,
+            app.focus,
+            None,
+        )));
     f.render_widget(paragraph, chunks[0]);
     {
         let chunks = Layout::default()
@@ -126,19 +126,27 @@ fn draw_header<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
             .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
             .split(chunks[1]);
 
-        let text = app.clone().input.get();
-        let paragraph = Paragraph::new(text).block(
-            Block::default()
-                .borders(Borders::ALL)
-                .style(border_color(super::app::Window::Input, app.focus)),
-        );
+        let mut text = Text::styled(app.clone().input.get(), Style::default().fg(Color::Green));
+        if app.input.content == "" {
+            text = Text::styled("Input", Style::default().fg(Color::Yellow))
+        }
+        
+        
+        let paragraph =
+            Paragraph::new(text).block(Block::default().borders(Borders::ALL).style(border_color(
+                super::app::Window::Input,
+                app.focus,
+                Some((Color::Green, Color::White)),
+            )));
         f.render_widget(paragraph, chunks[0]);
 
         let routes = Line::from(app.routes.print());
         let paragraph = Paragraph::new(routes).block(
-            Block::default()
-                .borders(Borders::ALL)
-                .style(border_color(super::app::Window::Route, app.focus)),
+            Block::default().borders(Borders::ALL).style(border_color(
+                super::app::Window::Route,
+                app.focus,
+                None,
+            )),
         );
         f.render_widget(paragraph, chunks[1]);
     }
@@ -166,9 +174,11 @@ fn draw_rank<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
         None => vec![no_data!()],
     };
     let paragraph = Paragraph::new(concat_text(texts)).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .style(border_color(super::app::Window::Rank, app.focus)),
+        Block::default().borders(Borders::ALL).style(border_color(
+            super::app::Window::Rank,
+            app.focus,
+            None,
+        )),
     );
     f.render_widget(paragraph, area);
 }
@@ -179,9 +189,11 @@ fn draw_masteries<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
         None => vec![no_data!()],
     };
     let paragraph = Paragraph::new(concat_text(texts)).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .style(border_color(super::app::Window::Masteries, app.focus)),
+        Block::default().borders(Borders::ALL).style(border_color(
+            super::app::Window::Masteries,
+            app.focus,
+            None,
+        )),
     );
     f.render_widget(paragraph, area);
 }
@@ -208,7 +220,7 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
             state = g.state;
 
             for (_, game) in g.items.clone().into_iter().enumerate() {
-                let mut text: Span = Span::from("");
+                let mut text: Text;
                 let mut id: Vec<&Participant> = game
                     .0
                     .info
@@ -218,12 +230,12 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
                     .collect();
 
                 if id.len() != 0 {
-                    if id.pop().unwrap().win {
-                        text =
-                            Span::styled("win", Style::default().fg(ratatui::style::Color::Green))
-                    } else {
-                        text = Span::styled("lose", Style::default().fg(ratatui::style::Color::Red))
+                    match id.pop().unwrap().win {
+                        true => text = Text::styled("win", Style::default().fg(Color::Green)),
+                        false => text = Text::styled("lose", Style::default().fg(Color::Red)),
                     }
+                } else {
+                     text = Text::styled("no_data", Style::default().fg(Color::Red))
                 }
 
                 items.push(ListItem::new(text));
@@ -248,9 +260,11 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     f.render_stateful_widget(list, chunks[0], &mut state);
 
     let paragraph = Paragraph::new(curr_game).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .style(border_color(super::app::Window::Games, app.focus)),
+        Block::default().borders(Borders::ALL).style(border_color(
+            super::app::Window::Games,
+            app.focus,
+            None,
+        )),
     );
     f.render_widget(paragraph, chunks[1]);
 }
@@ -261,11 +275,13 @@ fn draw_footer<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     //    app.data.current_search, app.route, app.data.env_search, app.state
     //);
     let text = format!("{}", app.keys);
-    
-    let paragraph = Paragraph::new(text.into_text().unwrap_or(no_data!())).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .style(border_color(super::app::Window::Footer, app.focus)),
-    ).wrap(Wrap { trim: true });
+
+    let paragraph = Paragraph::new(text.into_text().unwrap_or(no_data!()))
+        .block(Block::default().borders(Borders::ALL).style(border_color(
+            super::app::Window::Footer,
+            app.focus,
+            None,
+        )))
+        .wrap(Wrap { trim: true });
     f.render_widget(paragraph, area);
 }

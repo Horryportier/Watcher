@@ -173,7 +173,7 @@ impl App {
         let region: Option<&str> = std::option_env!("WATCHER_REGION");
         if let Some(name) = name {
             if let Some(region) = region {
-                self.data.current_search = Some((name.into(), region.into()));
+                self.data.env_search = Some((name.into(), region.into()));
                 return Ok(());
             }
             return Err(Error::default());

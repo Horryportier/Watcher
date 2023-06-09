@@ -1,9 +1,8 @@
 use core::fmt;
-use std::fmt::Display ;
+use std::fmt::Display;
 
 use ansi_to_tui::IntoText;
-use crossterm::
-style::{Color, Stylize};
+use crossterm::style::{Color, Stylize};
 use ratatui::{
     style::{self, Modifier, Style},
     text::{Line, Span, Text},
@@ -67,7 +66,7 @@ fn padding(text: String, padding: Pad, amount: usize, ch: u8) -> String {
 
 pub trait DisplayToText<T: Display>
 where
-Self: std::fmt::Display + Sized,
+    Self: std::fmt::Display + Sized,
 {
     fn into_text(&self) -> Text<'static> {
         let a = format!("{}", self);
@@ -114,18 +113,18 @@ impl Display for SummonerDisplay {
             r###"
 {}  {}:{}
                            "###,
-                           entry
-                           .name
-                           .clone()
-                           .with(Color::Blue)
-                           .attribute(crossterm::style::Attribute::Bold)
-                           .attribute(crossterm::style::Attribute::Underlined),
-                           "lvl".with(Color::Reset),
-                           entry.summoner_level.to_string().with(Color::Cyan)
-                          );
+            entry
+                .name
+                .clone()
+                .with(Color::Blue)
+                .attribute(crossterm::style::Attribute::Bold)
+                .attribute(crossterm::style::Attribute::Underlined),
+            "lvl".with(Color::Reset),
+            entry.summoner_level.to_string().with(Color::Cyan)
+        );
 
         write!(f, "{}", text)
-        }
+    }
 }
 
 impl With for SummonerDisplay {
@@ -152,38 +151,38 @@ impl fmt::Display for LeagueEntryDisplay {
     {}
             "###,
             entry
-            .summoner_name
-            .as_str()
-            .with(crossterm::style::Color::Yellow),
+                .summoner_name
+                .as_str()
+                .with(crossterm::style::Color::Yellow),
             entry
-            .queue_type
-            .to_string()
-            .with(Color::Grey)
-            .attribute(crossterm::style::Attribute::Bold)
-            .attribute(crossterm::style::Attribute::Underlined),
+                .queue_type
+                .to_string()
+                .with(Color::Grey)
+                .attribute(crossterm::style::Attribute::Bold)
+                .attribute(crossterm::style::Attribute::Underlined),
             entry
-            .tier
-            .unwrap_or(Tier::IRON)
-.to_string()
-    .with(Color::Yellow),
-    entry
-    .rank
-    .unwrap_or(riven::consts::Division::I)
-    .to_string()
-.with(Color::Blue),
-entry.wins.to_string().with(Color::Green),
-entry.losses.to_string().with(Color::Red),
-(entry.wins * 100 / (entry.wins + entry.losses))
-    .to_string()
-.with(Color::Cyan)
-    .attribute(crossterm::style::Attribute::Bold),
-    entry
-    .hot_streak
-    .then(|| "🔥")
-    .unwrap_or("❄")
-.attribute(crossterm::style::Attribute::Underlined)
-    );
-    write!(f, "{}", text)
+                .tier
+                .unwrap_or(Tier::IRON)
+                .to_string()
+                .with(Color::Yellow),
+            entry
+                .rank
+                .unwrap_or(riven::consts::Division::I)
+                .to_string()
+                .with(Color::Blue),
+            entry.wins.to_string().with(Color::Green),
+            entry.losses.to_string().with(Color::Red),
+            (entry.wins * 100 / (entry.wins + entry.losses))
+                .to_string()
+                .with(Color::Cyan)
+                .attribute(crossterm::style::Attribute::Bold),
+            entry
+                .hot_streak
+                .then(|| "🔥")
+                .unwrap_or("❄")
+                .attribute(crossterm::style::Attribute::Underlined)
+        );
+        write!(f, "{}", text)
     }
 }
 
@@ -194,7 +193,6 @@ impl With for LeagueEntryDisplay {
     }
 }
 impl DisplayToText<LeagueEntryDisplay> for LeagueEntryDisplay {}
-
 
 #[derive(Clone)]
 pub struct ChampionMasteryDisplay(pub ChampionMastery);
@@ -210,13 +208,13 @@ impl Display for ChampionMasteryDisplay {
         let ch_level = format!(
             "{}",
             entry.champion_level.to_string().cyan().bold().to_string()
-            );
+        );
         let text = format!(
-            "{} {} ({:<2})",
+            "{} {} ({})",
             padding(ch_id, Pad::Left, 30, b' '),
             padding(ch_points, Pad::Left, 23, b' '),
             ch_level
-            );
+        );
 
         write!(f, "{}", text)
     }
@@ -251,111 +249,111 @@ impl Display for MatchDisplay {
             .collect::<Vec<_>>();
 
         lines.push(format!(
-                "{}",
-                entry
+            "{}",
+            entry
                 .game_mode
                 .to_string()
                 .with(Color::Reset)
                 .attribute(crossterm::style::Attribute::Bold)
                 .attribute(crossterm::style::Attribute::Underlined),
-                ));
+        ));
         lines.push(format!(
-                "{}",
-                "Team Red"
+            "{}",
+            "Team Red"
                 .with(Color::Red)
                 .attribute(crossterm::style::Attribute::Bold)
                 .attribute(crossterm::style::Attribute::Underlined)
-                ));
+        ));
 
         lines.append(
             &mut team_red
-            .iter()
-            .enumerate()
-            .map(|f| {
-                let (_, r) = f;
-                let kda = format!("{}/{}/{}", r.kills, r.deaths, r.assists);
-                format!(
-                    "      {} {} {}  |  {} {}",
-                    padding(
-                        r.team_position.clone().with(Color::Cyan).to_string(),
-                        Pad::Left,
-                        25,
-                        b' '
+                .iter()
+                .enumerate()
+                .map(|f| {
+                    let (_, r) = f;
+                    let kda = format!("{}/{}/{}", r.kills, r.deaths, r.assists);
+                    format!(
+                        "      {} {} {}  |  {} {}",
+                        padding(
+                            r.team_position.clone().with(Color::Cyan).to_string(),
+                            Pad::Left,
+                            25,
+                            b' '
                         ),
                         padding(
                             r.summoner_name.clone().with(Color::Red).to_string(),
                             Pad::Left,
                             35,
                             b' '
-                            ),
-                            padding(
-                                r.champion_name.clone().with(Color::Yellow).to_string(),
-                                Pad::Left,
-                                30,
-                                b' '
-                                ),
-                                padding(kda.with(Color::Green).to_string(), Pad::Left, 20, b' '),
-                                padding(
-                                    r.total_minions_killed
-                                    .to_string()
-                                    .with(Color::Cyan)
-                                    .to_string(),
-                                    Pad::Left,
-                                    0,
-                                    b' '
-                                    ),
-                                    )
-            })
-        .collect::<Vec<String>>(),
+                        ),
+                        padding(
+                            r.champion_name.clone().with(Color::Yellow).to_string(),
+                            Pad::Left,
+                            30,
+                            b' '
+                        ),
+                        padding(kda.with(Color::Green).to_string(), Pad::Left, 20, b' '),
+                        padding(
+                            r.total_minions_killed
+                                .to_string()
+                                .with(Color::Cyan)
+                                .to_string(),
+                            Pad::Left,
+                            0,
+                            b' '
+                        ),
+                    )
+                })
+                .collect::<Vec<String>>(),
         );
         lines.push(format!(
-                "{}",
-                "Team Blue"
+            "{}",
+            "Team Blue"
                 .with(Color::Blue)
                 .attribute(crossterm::style::Attribute::Bold)
                 .attribute(crossterm::style::Attribute::Underlined)
-                ));
+        ));
 
         lines.append(
             &mut team_blue
-            .iter()
-            .enumerate()
-            .map(|f| {
-                let (_, b) = f;
-                let kda = format!("{}/{}/{}", b.kills, b.deaths, b.assists);
-                format!(
-                    "      {} {} {}  |  {} {}",
-                    padding(
-                        b.team_position.clone().with(Color::Cyan).to_string(),
-                        Pad::Left,
-                        25,
-                        b' '
+                .iter()
+                .enumerate()
+                .map(|f| {
+                    let (_, b) = f;
+                    let kda = format!("{}/{}/{}", b.kills, b.deaths, b.assists);
+                    format!(
+                        "      {} {} {}  |  {} {}",
+                        padding(
+                            b.team_position.clone().with(Color::Cyan).to_string(),
+                            Pad::Left,
+                            25,
+                            b' '
                         ),
                         padding(
                             b.summoner_name.clone().with(Color::Red).to_string(),
                             Pad::Left,
                             35,
                             b' '
-                            ),
-                            padding(
-                                b.champion_name.clone().with(Color::Yellow).to_string(),
-                                Pad::Left,
-                                30,
-                                b' '
-                                ),
-                                padding(kda.with(Color::Green).to_string(), Pad::Left, 20, b' '),
-                                padding(
-                                    b.total_minions_killed
-                                    .to_string()
-                                    .with(Color::Cyan)
-                                    .to_string(),
-                                    Pad::Left,
-                                    0,
-                                    b' '
-                                    ),
-                                    )
-            })
-        .collect::<Vec<String>>(),
+                        ),
+                        padding(
+                            b.champion_name.clone().with(Color::Yellow).to_string(),
+                            Pad::Left,
+                            30,
+                            b' '
+                        ),
+                        padding(kda.with(Color::Green).to_string(), Pad::Left, 20, b' '),
+                        padding(
+                            b.total_minions_killed
+                                .to_string()
+                                .with(Color::Cyan)
+                                .to_string(),
+                            Pad::Left,
+                            0,
+                            b' '
+                        ),
+                    )
+                })
+                .collect::<Vec<String>>(),
         );
 
         write!(f, "{}", lines.join("\n"))
@@ -381,32 +379,33 @@ impl MatchDisplay {
                     Span::styled(
                         "won",
                         Style::default()
-                        .fg(style::Color::Green)
-                        .add_modifier(Modifier::BOLD),
-                        )
+                            .fg(style::Color::Green)
+                            .add_modifier(Modifier::BOLD),
+                    )
                 } else {
                     Span::styled(
                         "lose",
                         Style::default()
-                        .fg(style::Color::Green)
-                        .add_modifier(Modifier::BOLD),
-                        )
+                            .fg(style::Color::Green)
+                            .add_modifier(Modifier::BOLD),
+                    )
                 }
             })
-        .collect::<Vec<Span>>();
+            .collect::<Vec<Span>>();
         vec![Line::from(text)]
     }
 }
 
-
-
-pub fn border_color(curr: Window, focused: Option<Window>) -> Style {
+/// color is Some((focused, unfocesed)) color
+pub fn border_color(curr: Window, focused: Option<Window>, colors: Option<(ratatui::style::Color, ratatui::style::Color)>) -> Style {
+    let mut color = (ratatui::style::Color::Black, ratatui::style::Color::White);
+    if let Some(c) = colors {
+        color = c;
+    }
     if let Some(focused) = focused {
         if curr == focused {
-            return Style::default().fg(style::Color::Black);
+            return Style::default().fg(color.0);
         }
     }
-    Style::default().fg(style::Color::White)
+    Style::default().fg(color.1)
 }
-
-
