@@ -25,12 +25,19 @@ cargo install
 *as cargo package maybe in the future*
 
 ## Usage
-``` bash
+```bash
+
+            Watcher 
+______________________________
+
 Usage: Watcher [name] [region] [flags]
 
+
+# Regions:
+["kr", "ru", "br", "jp", "la1", "la2", "na", "oce", "ph", "sg", "th", "tr", "tw", "eune", "euw"]
 Flags:
 ------------------------------
-NONE            lunches Tui 
+NONE     lunches Tui 
 -h | --help     prints help
 -s | --summoner searches for summoner
 -r | --rank     get's summoner rank 
