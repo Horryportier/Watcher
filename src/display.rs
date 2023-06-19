@@ -31,6 +31,8 @@ pub fn concat_text(texts: Vec<Text>) -> Text {
     }
     Text::from(lines)
 }
+
+#[allow(dead_code)]
 enum Pad {
     Left,
     Right,
@@ -133,6 +135,7 @@ impl With for SummonerDisplay {
         SummonerDisplay(entry)
     }
 }
+
 impl DisplayToText<SummonerDisplay> for SummonerDisplay {}
 
 #[derive(Clone)]
@@ -368,6 +371,7 @@ impl With for MatchDisplay {
 }
 
 impl MatchDisplay {
+    #[allow(dead_code)]
     pub fn list(&mut self, name: String) -> Vec<Line> {
         let text = self
             .0

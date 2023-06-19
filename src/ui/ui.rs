@@ -17,7 +17,7 @@ use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::{Line, Span, Text},
+    text::{Line, Text},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
     Frame, Terminal,
 };
@@ -42,7 +42,7 @@ pub async fn ui(api_key: &str) -> Result<(), io::Error> {
     let tick_rate = Duration::from_millis(250);
     let last_tick = Instant::now();
     let mut app = App::default();
-    app.key = api_key.to_string();
+    app.api_key = api_key.to_string();
 
     loop {
         let mut msg: Option<Msg> = None;
@@ -99,7 +99,21 @@ fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) -> Option<Msg> {
 
     draw_header(f, app, chunks[0]);
     draw_conntent(f, app, chunks[1]);
-    draw_footer(f, app, chunks[2]);
+
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(
+            [
+                Constraint::Percentage(70),
+                Constraint::Percentage(30),
+            ]
+            .as_ref(),
+        )
+        .split(chunks[2]);
+
+
+    draw_footer(f, app, chunks[0]);
+    draw_logs(f, app, chunks[1]);
     None
 }
 
@@ -203,8 +217,9 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
         .split(area);
-
-    let mut name: String = "".to_string();
+                                                                                                                                                                    
+    #[allow(unused_assignments)]
+    let mut name: String = String::default();
     match &app.data.current_search {
         Some(i) => name = i.1.clone(),
         None => name = "".to_string().clone(),
@@ -220,7 +235,7 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
             state = g.state;
 
             for (_, game) in g.items.clone().into_iter().enumerate() {
-                let mut text: Text;
+                let text: Text;
                 let mut id: Vec<&Participant> = game
                     .0
                     .info
@@ -270,10 +285,6 @@ fn draw_games<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 }
 
 fn draw_footer<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    //let text = format!(
-    //    "search {:?}:{:?}, env_search {:?} | State {:?} ",
-    //    app.data.current_search, app.route, app.data.env_search, app.state
-    //);
     let text = format!("{}", app.keys);
 
     let paragraph = Paragraph::new(text.into_text().unwrap_or(no_data!()))
@@ -284,4 +295,16 @@ fn draw_footer<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
         )))
         .wrap(Wrap { trim: true });
     f.render_widget(paragraph, area);
+}
+
+fn draw_logs<B: Backend>(f: &mut Frame<B> , app: &mut App, area: Rect) {
+    let text = app.log.to_string();
+    let paragraph = Paragraph::new(text.into_text().unwrap_or(no_data!()))
+        .block(Block::default().borders(Borders::ALL).style(border_color(
+            super::app::Window::Footer,
+            app.focus,
+            None,
+        )))
+        .wrap(Wrap { trim: true });
+    f.render_widget(paragraph, area)
 }

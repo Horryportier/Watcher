@@ -5,6 +5,8 @@ use crossterm::{
     style::Stylize,
 };
 
+use crate::utils::Log;
+
 use super::app::{App, Msg, Window};
 
 #[derive(Clone)]
@@ -13,6 +15,7 @@ pub struct Keys {
 }
 
 impl Keys {
+    #[allow(dead_code)]
     pub fn with(keys: Vec<(Vec<KeyCode>, String)>) -> Keys {
         Keys { keys }
     }
@@ -68,6 +71,8 @@ pub async fn handle_keys(timeout: Duration, app: &mut App) -> io::Result<Option<
                                 Err(..) => None,
                             },
                             Some(search) => {
+                                app.log = Log::new(crate::utils::LogKind::Info, 
+                                        format!("searching: {} {}", app.clone().into_route(search.1.clone()), search.0.clone()));
                                 Some(Msg::Search(app.clone().into_route(search.1), search.0))
                             }
                         };
@@ -96,6 +101,8 @@ pub async fn handle_keys(timeout: Duration, app: &mut App) -> io::Result<Option<
                     }
                     KeyCode::Enter => {
                         let tmp = app.clone().input.get();
+                                app.log = Log::new(crate::utils::LogKind::Info, 
+                                        format!("searching: {} {}", app.route, tmp));
                         return Ok(Some(Msg::Search(app.route, tmp)));
                     }
                     KeyCode::Char(c) => app.input.append(c.to_string()),

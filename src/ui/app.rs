@@ -5,12 +5,13 @@ use riven::consts::PlatformRoute;
 
 use crate::{
     api::api::{get_games, get_masteries, get_rank, get_summoner},
-    display::{ChampionMasteryDisplay, LeagueEntryDisplay, MatchDisplay, SummonerDisplay, With},
+    display::{ChampionMasteryDisplay, LeagueEntryDisplay, MatchDisplay, SummonerDisplay, With}, utils::{Log, routes, parse_route},
 };
 
 use super::keys::Keys;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum State {
     Searching(String, PlatformRoute), // name PlatformRoute
     Failed(String, PlatformRoute),
@@ -19,6 +20,7 @@ pub enum State {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum WatcherErr {
     SearchFalied { name: String, puuid: String },
     Riot(String),
@@ -70,7 +72,7 @@ impl Window {
 
 #[derive(Clone)]
 pub struct App {
-    pub key: String,
+    pub api_key: String, 
     pub state: State,
     pub msg: Option<Msg>,
     pub focus: Option<Window>,
@@ -79,6 +81,7 @@ pub struct App {
     pub route: PlatformRoute,
     pub routes: RouteList,
     pub keys: Keys,
+    pub log: Log,
 }
 
 #[derive(Clone)]
@@ -102,23 +105,7 @@ pub enum Games {
 
 impl App {
     pub fn default() -> App {
-        let mut map: Vec<(String, PlatformRoute)> = vec![];
-        map.push(("kr".to_string(), PlatformRoute::KR));
-        map.push(("ru".to_string(), PlatformRoute::RU));
-        map.push(("br".to_string(), PlatformRoute::BR1));
-        map.push(("jp".to_string(), PlatformRoute::JP1));
-        map.push(("la1".to_string(), PlatformRoute::LA1));
-        map.push(("la2".to_string(), PlatformRoute::LA2));
-        map.push(("na".to_string(), PlatformRoute::NA1));
-        map.push(("oce".to_string(), PlatformRoute::OC1));
-        map.push(("ph".to_string(), PlatformRoute::PH2));
-        map.push(("sg".to_string(), PlatformRoute::SG2));
-        map.push(("th".to_string(), PlatformRoute::TH2));
-        map.push(("tr".to_string(), PlatformRoute::TR1));
-        map.push(("tw".to_string(), PlatformRoute::TW2));
-        map.push(("eune".to_string(), PlatformRoute::EUN1));
-        map.push(("euw".to_string(), PlatformRoute::EUW1));
-
+        let map = routes();
         let routes = RouteList {
             state: ListState::default(),
             items: map,
@@ -128,7 +115,8 @@ impl App {
 
         App {
             keys,
-            key: "".to_string(),// api key
+            log: Log::new(crate::utils::LogKind::Info, "App start".into()), 
+            api_key: "".to_string(),// api key
             state: State::Idle,
             msg: None,
             focus: Some(Window::List),
@@ -161,6 +149,7 @@ impl App {
                 Msg::Search(route, name) => {
                     self.input.clear();
                     self.search_all(&route, &name).await;
+                    self.log = Log::new(crate::utils::LogKind::Info, "search finished".into())
                 }
                 _ => {}
             },
@@ -222,7 +211,7 @@ impl App {
     async fn search_all(&mut self, route: &PlatformRoute, name: &str) {
         let name = name.replace(" ", "");
         let puuid: &str;
-        let res = get_summoner(&self.key, *route, &name).await.unwrap_or(None);
+        let res = get_summoner(&self.api_key, *route, &name).await.unwrap_or(None);
         match res {
             None => self.state = State::Failed(name.to_string(), *route),
 
@@ -233,7 +222,7 @@ impl App {
                 self.data.current_search = Some((sumoner.id, sumoner.name));
 
                 let res = get_rank(
-                    &self.key,
+                    &self.api_key,
                     *route,
                     &self.data.current_search.as_ref().unwrap().0,
                 )
@@ -249,7 +238,7 @@ impl App {
                 self.data.rank = entry;
 
                 let res = get_masteries(
-                    &self.key,
+                    &self.api_key,
                     *route,
                     &self.data.current_search.as_ref().unwrap().0,
                     10,
@@ -265,7 +254,7 @@ impl App {
                 };
                 self.data.masteries = entry;
 
-                let res = get_games(&self.key, *route, puuid).await;
+                let res = get_games(&self.api_key, *route, puuid).await;
                 let entry: Option<Vec<MatchDisplay>> = match res {
                     Err(_) => None,
                     Ok(rank) => Some(rank.iter().map(|f| MatchDisplay::with(f.clone())).collect()),
@@ -290,6 +279,8 @@ pub struct GamesList {
     pub items: Vec<MatchDisplay>,
 }
 
+
+#[allow(dead_code)]
 impl GamesList {
     pub fn with(items: Vec<MatchDisplay>) -> GamesList {
         GamesList {
@@ -383,6 +374,7 @@ pub struct RouteList {
     pub items: Vec<(String, PlatformRoute)>,
 }
 
+#[allow(dead_code)]
 impl RouteList {
     pub fn with(items: Vec<(String, PlatformRoute)>) -> RouteList {
         RouteList {
@@ -453,15 +445,8 @@ impl RouteList {
 
     pub fn get_item(&mut self, key: Option<String>) -> PlatformRoute {
         match key {
-            Some(key) => self
-                .items
-                .iter()
-                .filter(|f| key == f.0)
-                .map(|f| f.1)
-                .collect::<Vec<PlatformRoute>>()
-                .pop()
-                .unwrap_or(PlatformRoute::KR),
-            None => {
+            Some(key) =>  parse_route(key),
+                None => {
                 let idx = self.state.selected().unwrap_or(0);
 
                 if idx >= self.items.len() {
